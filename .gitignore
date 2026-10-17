@@ -1,0 +1,13 @@
+src/adec
+build/
+
+*.o
+*.out
+*.exe
+
+playground/*
+!playground/*.*
+
+.vscode/
+.idea/
+*.swp
