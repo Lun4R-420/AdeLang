@@ -18,7 +18,7 @@ std::string readFile(const std::string& path) {
 
 int main(int argc, char* argv[]) {
     if (argc != 2) {
-        std::cerr << "Usage: adec <file.ade>\n";
+        std::cerr << "Usage: adec <file.adel>\n";
         return 64; // wrong usage
     }
     std::string source = readFile(argv[1]);
