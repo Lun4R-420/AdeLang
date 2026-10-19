@@ -2,7 +2,9 @@
 #include <fstream>
 #include <cstdlib>
 #include <sstream>
+#include <memory>
 #include "scanner.hpp"
+#include "ast_printer.hpp"
 
 std::string readFile(const std::string& path) {
     std::ifstream file(path);
@@ -27,6 +29,14 @@ int main(int argc, char* argv[]) {
     for (const Token& t : tokens) {
         std::cout << t.line << "  " << tokenTypeName(t.type) << "  '" << t.lexeme << "'\n";
     }
+
+    auto lit123 = std::make_unique<Expr>(Expr{Literal{123}});
+    auto lit45 = std::make_unique<Expr>(Expr{Literal{45}});
+    auto negative = std::make_unique<Expr>(Expr{Unary{Token{TokenType::Minus, "-", 1}, std::move(lit123)}});
+    auto group = std::make_unique<Expr>(Expr{Grouping{std::move(lit45)}});
+    Expr root{Binary{std::move(negative), std::move(group), Token{TokenType::Star, "*", 1}}};
+    std::cout << printAst(root) << '\n';
+
     if (scanner.hasError()) {
         return 65; // data errors
     }
