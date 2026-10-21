@@ -2,8 +2,9 @@
 #include <fstream>
 #include <cstdlib>
 #include <sstream>
-#include <memory>
+#include <stdexcept>
 #include "scanner.hpp"
+#include "parser.hpp"
 #include "ast_printer.hpp"
 
 std::string readFile(const std::string& path) {
@@ -26,19 +27,17 @@ int main(int argc, char* argv[]) {
     std::string source = readFile(argv[1]);
     Scanner scanner(source);
     std::vector<Token> tokens = scanner.scanTokens();
-    for (const Token& t : tokens) {
-        std::cout << t.line << "  " << tokenTypeName(t.type) << "  '" << t.lexeme << "'\n";
-    }
-
-    auto lit123 = std::make_unique<Expr>(Expr{Literal{123}});
-    auto lit45 = std::make_unique<Expr>(Expr{Literal{45}});
-    auto negative = std::make_unique<Expr>(Expr{Unary{Token{TokenType::Minus, "-", 1}, std::move(lit123)}});
-    auto group = std::make_unique<Expr>(Expr{Grouping{std::move(lit45)}});
-    Expr root{Binary{std::move(negative), std::move(group), Token{TokenType::Star, "*", 1}}};
-    std::cout << printAst(root) << '\n';
-
     if (scanner.hasError()) {
         return 65; // data errors
+    }
+
+    Parser parser(tokens);
+    try {
+        ExprPtr ast = parser.parse();
+        std::cout << printAst(*ast) << '\n';
+    } catch (const std::runtime_error& e) {
+        std::cerr << e.what() << '\n';
+        return 65;
     }
     return 0;
 }

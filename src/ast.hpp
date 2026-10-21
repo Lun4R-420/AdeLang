@@ -4,6 +4,7 @@
 #include <variant>
 
 struct Expr;
+using ExprPtr = std::unique_ptr<Expr>;
 
 struct Literal {
     long long number;
