@@ -8,10 +8,18 @@ namespace {
         void emit(const std::string& line) {
             out << "    " << line << '\n';
         }
+
+        void compare(const std::string& setInstr) {
+            emit("cmpq %rcx, %rax");
+            emit(setInstr + " %al");
+            emit("movzbq %al, %rax");
+        }
+
         void operator()(const Literal& lit) {
             std::string instr = "movq $" + std::to_string(lit.number) + ", %rax";
             emit(instr);
         }
+
         void operator()(const Unary& unary) {
             std::visit(*this, unary.right->node);
             switch (unary.op.type) {
@@ -27,6 +35,7 @@ namespace {
                     throw std::runtime_error("[line " + std::to_string(unary.op.line) + "] Error: unsupported unary operator '" + unary.op.lexeme + "'");
             }
         }
+
         void operator()(const Binary& bin) {
             std::visit(*this, bin.left->node);
             emit("pushq %rax");
@@ -52,10 +61,29 @@ namespace {
                     emit("idivq %rcx");
                     emit("movq %rdx, %rax");
                     break;
+                case TokenType::EqualEqual:
+                    compare("sete");
+                    break;
+                case TokenType::BangEqual:
+                    compare("setne");
+                    break;
+                case TokenType::Greater:
+                    compare("setg");
+                    break;
+                case TokenType::GreaterEqual:
+                    compare("setge");
+                    break;
+                case TokenType::Less:
+                    compare("setl");
+                    break;
+                case TokenType::LessEqual:
+                    compare("setle");
+                    break;
                 default:
                     throw std::runtime_error("[line " + std::to_string(bin.op.line) + "] Error: unsupported binary operator '" + bin.op.lexeme + "'");
             }
         }
+
         void operator()(const Grouping& group) {
             std::visit(*this, group.child->node);
         }
