@@ -6,6 +6,7 @@
 #include "scanner.hpp"
 #include "parser.hpp"
 #include "ast_printer.hpp"
+#include "codegen.hpp"
 
 std::string readFile(const std::string& path) {
     std::ifstream file(path);
@@ -35,6 +36,7 @@ int main(int argc, char* argv[]) {
     try {
         ExprPtr ast = parser.parse();
         std::cout << printAst(*ast) << '\n';
+        std::cout << generateProgram(*ast);
     } catch (const std::runtime_error& e) {
         std::cerr << e.what() << '\n';
         return 65;
