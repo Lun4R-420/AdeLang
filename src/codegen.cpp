@@ -92,8 +92,16 @@ namespace {
 
 std::string generateProgram(const Expr& expr) {
     CodeGen gen;
-    gen.out << ".text\n.globl main\nmain:\n";
+    gen.out << ".section .rodata\nfmt: .string \"%lld\\n\"\n.text\n.globl main\nmain:\n";
+    gen.emit("pushq %rbp");
+    gen.emit("movq %rsp, %rbp");
     std::visit(gen, expr.node);
+    gen.emit("movq %rax, %rsi");
+    gen.emit("leaq fmt(%rip), %rdi");
+    gen.emit("movl $0, %eax");
+    gen.emit("call printf@PLT");
+    gen.emit("movl $0, %eax");
+    gen.emit("popq %rbp");
     gen.emit("ret");
     gen.out << ".section .note.GNU-stack,\"\",@progbits\n";
     return gen.out.str();
