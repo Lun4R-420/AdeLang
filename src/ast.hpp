@@ -5,6 +5,7 @@
 
 struct Expr;
 using ExprPtr = std::unique_ptr<Expr>;
+struct Stmt;
 
 struct Literal {
     long long number;
@@ -27,4 +28,16 @@ struct Grouping {
 
 struct Expr {
     std::variant<Literal, Unary, Binary, Grouping> node;
+};
+
+struct PrintStmt {
+    ExprPtr expr;
+};
+
+struct ExprStmt {
+    ExprPtr expr;
+};
+
+struct Stmt {
+    std::variant<PrintStmt, ExprStmt> node;
 };

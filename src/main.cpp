@@ -47,8 +47,8 @@ int main(int argc, char* argv[]) {
     Parser parser(tokens);
     std::string assembly;
     try {
-        ExprPtr ast = parser.parse();
-        assembly = generateProgram(*ast);
+        std::vector<Stmt> program = parser.parse();
+        assembly = generateProgram(program);
     } catch (const std::runtime_error& e) {
         std::cerr << e.what() << '\n';
         return 65;

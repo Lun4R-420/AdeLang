@@ -87,19 +87,33 @@ namespace {
         void operator()(const Grouping& group) {
             std::visit(*this, group.child->node);
         }
+
+        void operator()(const PrintStmt& print) {
+            std::visit(*this, print.expr->node);
+            emit("movq %rax, %rsi");
+            emit("leaq fmt(%rip), %rdi");
+            emit("movl $0, %eax");
+            emit("call printf@PLT");
+        }
+
+        void operator()(const ExprStmt& stmt) {
+            std::visit(*this, stmt.expr->node);
+        }
     };
 }
 
-std::string generateProgram(const Expr& expr) {
+std::string generateProgram(const std::vector<Stmt>& program) {
     CodeGen gen;
     gen.out << ".section .rodata\nfmt: .string \"%lld\\n\"\n.text\n.globl main\nmain:\n";
     gen.emit("pushq %rbp");
     gen.emit("movq %rsp, %rbp");
-    std::visit(gen, expr.node);
-    gen.emit("movq %rax, %rsi");
-    gen.emit("leaq fmt(%rip), %rdi");
-    gen.emit("movl $0, %eax");
-    gen.emit("call printf@PLT");
+    for (const Stmt& stmt : program) {
+        std::visit(gen, stmt.node);
+        // gen.emit("movq %rax, %rsi");
+        // gen.emit("leaq fmt(%rip), %rdi");
+        // gen.emit("movl $0, %eax");
+        // gen.emit("call printf@PLT");
+    }
     gen.emit("movl $0, %eax");
     gen.emit("popq %rbp");
     gen.emit("ret");

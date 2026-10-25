@@ -114,8 +114,29 @@ ExprPtr Parser::primary() {
     throw std::runtime_error("[line " + std::to_string(peek().line) + "] Error: expected expression");
 }
 
-ExprPtr Parser::parse() {
-    ExprPtr expr = expression();
-    consume(TokenType::Eof, "expected end of expression");
-    return expr;
+Stmt Parser::statement() {
+    if (match({TokenType::Print})) {
+        return printStatement();
+    }
+    return expressionStatement();
+}
+
+Stmt Parser::printStatement() {
+    ExprPtr value = expression();
+    consume(TokenType::Semicolon, "expected ';' after expression");
+    return Stmt{PrintStmt{std::move(value)}};
+}
+
+Stmt Parser::expressionStatement() {
+    ExprPtr value = expression();
+    consume(TokenType::Semicolon, "expected ';' after expression");
+    return Stmt{ExprStmt{std::move(value)}};
+}
+
+std::vector<Stmt> Parser::parse() {
+    std::vector<Stmt> statements;
+    while (!isAtEnd()) {
+        statements.push_back(statement());
+    }
+    return statements;
 }
