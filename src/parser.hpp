@@ -23,9 +23,12 @@ private:
     ExprPtr factor();
     ExprPtr unary();
     ExprPtr primary();
+    ExprPtr assignment();
     Stmt statement();
     Stmt printStatement();
     Stmt expressionStatement();
+    Stmt declaration();
+    Stmt varDeclaration();
 
 public:
     Parser(std::vector<Token> tokens);

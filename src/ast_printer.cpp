@@ -16,6 +16,12 @@ struct AstPrinter {
         std::string s = "(group " + printAst(*group.child) + ")";
         return s;
     }
+    std::string operator() (const Variable&) {
+        return "";
+    }
+    std::string operator() (const Assign&) {
+        return "";
+    }
 };
 
 std::string printAst(const Expr& expr) {

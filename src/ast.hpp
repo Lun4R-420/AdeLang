@@ -26,8 +26,22 @@ struct Grouping {
     std::unique_ptr<Expr> child;
 };
 
+struct Variable {
+    Token name;
+};
+
+struct Assign {
+    Token name;
+    ExprPtr value;
+};
+
 struct Expr {
-    std::variant<Literal, Unary, Binary, Grouping> node;
+    std::variant<Literal, Unary, Binary, Grouping, Variable, Assign> node;
+};
+
+struct VarStmt {
+    Token name;
+    ExprPtr init;
 };
 
 struct PrintStmt {
@@ -39,5 +53,5 @@ struct ExprStmt {
 };
 
 struct Stmt {
-    std::variant<PrintStmt, ExprStmt> node;
+    std::variant<PrintStmt, ExprStmt, VarStmt> node;
 };

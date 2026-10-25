@@ -99,6 +99,14 @@ namespace {
         void operator()(const ExprStmt& stmt) {
             std::visit(*this, stmt.expr->node);
         }
+
+        void operator()(const Variable&) {
+            
+        }
+
+        void operator()(const Assign&) {}
+
+        void operator()(const VarStmt&) {}
     };
 }
 
@@ -109,10 +117,6 @@ std::string generateProgram(const std::vector<Stmt>& program) {
     gen.emit("movq %rsp, %rbp");
     for (const Stmt& stmt : program) {
         std::visit(gen, stmt.node);
-        // gen.emit("movq %rax, %rsi");
-        // gen.emit("leaq fmt(%rip), %rdi");
-        // gen.emit("movl $0, %eax");
-        // gen.emit("call printf@PLT");
     }
     gen.emit("movl $0, %eax");
     gen.emit("popq %rbp");
