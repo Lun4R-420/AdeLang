@@ -1,10 +1,13 @@
 #include "codegen.hpp"
+#include <unordered_map>
 #include <sstream>
 #include <stdexcept>
 
 namespace {
     struct CodeGen {
         std::ostringstream out;
+        std::unordered_map<std::string, int> locals;
+        int stackSize = 0;
         void emit(const std::string& line) {
             out << "    " << line << '\n';
         }
@@ -100,25 +103,52 @@ namespace {
             std::visit(*this, stmt.expr->node);
         }
 
-        void operator()(const Variable&) {
-            
+        void operator()(const Variable& v) {
+            auto it = locals.find(v.name.lexeme);
+            if (it == locals.end()) {
+                throw std::runtime_error("[line " + std::to_string(v.name.line) + "] Error: undefined variable '" + v.name.lexeme + "'");
+            }
+            emit("movq " + std::to_string(it->second) + "(%rbp), %rax");
         }
 
-        void operator()(const Assign&) {}
+        void operator()(const Assign& assign) {
+            std::visit(*this, assign.value->node);
+            auto it = locals.find(assign.name.lexeme);
+            if (it == locals.end()) {
+                throw std::runtime_error("[line " + std::to_string(assign.name.line) + "] Error: undefined variable '" + assign.name.lexeme + "'");
+            }
+            emit("movq %rax, " + std::to_string(it->second) + "(%rbp)");
+        }
 
-        void operator()(const VarStmt&) {}
+        void operator()(const VarStmt& var) {
+            if (locals.find(var.name.lexeme) != locals.end()) {
+                throw std::runtime_error("[line " + std::to_string(var.name.line) + "] Error: variable '" + var.name.lexeme + "' already declared");
+            }
+            std::visit(*this, var.init->node);
+            stackSize += 8;
+            locals[var.name.lexeme] = -stackSize;
+            emit("movq %rax, " + std::to_string(-stackSize) + "(%rbp)");
+        }
     };
 }
 
 std::string generateProgram(const std::vector<Stmt>& program) {
     CodeGen gen;
+    int frameSize = 0;
+    for (const Stmt& stmt : program) {
+        if (std::holds_alternative<VarStmt>(stmt.node)) frameSize += 8;
+    }
+    frameSize = (frameSize + 15) / 16 * 16;
+
     gen.out << ".section .rodata\nfmt: .string \"%lld\\n\"\n.text\n.globl main\nmain:\n";
     gen.emit("pushq %rbp");
     gen.emit("movq %rsp, %rbp");
+    gen.emit("subq $" + std::to_string(frameSize) + ", %rsp");
     for (const Stmt& stmt : program) {
         std::visit(gen, stmt.node);
     }
     gen.emit("movl $0, %eax");
+    gen.emit("movq %rbp, %rsp");
     gen.emit("popq %rbp");
     gen.emit("ret");
     gen.out << ".section .note.GNU-stack,\"\",@progbits\n";
