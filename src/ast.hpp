@@ -2,6 +2,7 @@
 #include "token.hpp"
 #include <memory>
 #include <variant>
+#include <vector>
 
 struct Expr;
 using ExprPtr = std::unique_ptr<Expr>;
@@ -52,6 +53,10 @@ struct ExprStmt {
     ExprPtr expr;
 };
 
+struct BlockStmt {
+    std::vector<Stmt> statements;
+};
+
 struct Stmt {
-    std::variant<PrintStmt, ExprStmt, VarStmt> node;
+    std::variant<PrintStmt, ExprStmt, VarStmt, BlockStmt> node;
 };

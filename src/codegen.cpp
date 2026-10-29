@@ -6,8 +6,17 @@
 namespace {
     struct CodeGen {
         std::ostringstream out;
-        std::unordered_map<std::string, int> locals;
+        std::vector<std::unordered_map<std::string, int>> scopes{ {} };
         int stackSize = 0;
+        
+        int lookup(const Token& name) {
+            for (size_t i = scopes.size(); i >= 1; i--) {
+                auto it = scopes[i - 1].find(name.lexeme);
+                if (it != scopes[i - 1].end()) return it->second;
+            }
+            throw std::runtime_error("[line " + std::to_string(name.line) + "] Error: undefined variable '" + name.lexeme + "'");
+        }
+
         void emit(const std::string& line) {
             out << "    " << line << '\n';
         }
@@ -104,53 +113,56 @@ namespace {
         }
 
         void operator()(const Variable& v) {
-            auto it = locals.find(v.name.lexeme);
-            if (it == locals.end()) {
-                throw std::runtime_error("[line " + std::to_string(v.name.line) + "] Error: undefined variable '" + v.name.lexeme + "'");
-            }
-            emit("movq " + std::to_string(it->second) + "(%rbp), %rax");
+            int offset = lookup(v.name);
+            emit("movq " + std::to_string(offset) + "(%rbp), %rax");
         }
 
         void operator()(const Assign& assign) {
             std::visit(*this, assign.value->node);
-            auto it = locals.find(assign.name.lexeme);
-            if (it == locals.end()) {
-                throw std::runtime_error("[line " + std::to_string(assign.name.line) + "] Error: undefined variable '" + assign.name.lexeme + "'");
-            }
-            emit("movq %rax, " + std::to_string(it->second) + "(%rbp)");
+            int offset = lookup(assign.name);
+            emit("movq %rax, " + std::to_string(offset) + "(%rbp)");
         }
 
         void operator()(const VarStmt& var) {
-            if (locals.find(var.name.lexeme) != locals.end()) {
+            std::visit(*this, var.init->node);
+            if (scopes.back().find(var.name.lexeme) != scopes.back().end()) {
                 throw std::runtime_error("[line " + std::to_string(var.name.line) + "] Error: variable '" + var.name.lexeme + "' already declared");
             }
-            std::visit(*this, var.init->node);
             stackSize += 8;
-            locals[var.name.lexeme] = -stackSize;
+            scopes.back()[var.name.lexeme] = -stackSize;
             emit("movq %rax, " + std::to_string(-stackSize) + "(%rbp)");
+        }
+
+        void operator()(const BlockStmt& block) {
+            scopes.push_back({});
+            for (const Stmt& stmt : block.statements) {
+                std::visit(*this, stmt.node);
+            }
+            scopes.pop_back();
         }
     };
 }
 
 std::string generateProgram(const std::vector<Stmt>& program) {
     CodeGen gen;
-    int frameSize = 0;
-    for (const Stmt& stmt : program) {
-        if (std::holds_alternative<VarStmt>(stmt.node)) frameSize += 8;
-    }
-    frameSize = (frameSize + 15) / 16 * 16;
-
-    gen.out << ".section .rodata\nfmt: .string \"%lld\\n\"\n.text\n.globl main\nmain:\n";
-    gen.emit("pushq %rbp");
-    gen.emit("movq %rsp, %rbp");
-    gen.emit("subq $" + std::to_string(frameSize) + ", %rsp");
     for (const Stmt& stmt : program) {
         std::visit(gen, stmt.node);
     }
-    gen.emit("movl $0, %eax");
-    gen.emit("movq %rbp, %rsp");
-    gen.emit("popq %rbp");
-    gen.emit("ret");
-    gen.out << ".section .note.GNU-stack,\"\",@progbits\n";
-    return gen.out.str();
+    std::string body = gen.out.str();
+    int frameSize = (gen.stackSize + 15) / 16 * 16;
+
+    std::ostringstream result;
+    result << ".section .rodata\nfmt: .string \"%lld\\n\"\n.text\n.globl main\nmain:\n";
+    result << "    pushq %rbp\n";
+    result << "    movq %rsp, %rbp\n";
+    if (frameSize > 0) {
+        result << "    subq $" << frameSize << ", %rsp\n";
+    }
+    result << body;
+    result << "    movl $0, %eax\n";
+    result << "    movq %rbp, %rsp\n";
+    result << "    popq %rbp\n";
+    result << "    ret\n";
+    result << ".section .note.GNU-stack,\"\",@progbits\n";
+    return result.str();
 }

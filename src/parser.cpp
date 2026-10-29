@@ -136,6 +136,9 @@ Stmt Parser::statement() {
     if (match({TokenType::Print})) {
         return printStatement();
     }
+    if (match({TokenType::LeftBrace})) {
+        return Stmt{BlockStmt{block()}};
+    }
     return expressionStatement();
 }
 
@@ -164,6 +167,15 @@ Stmt Parser::varDeclaration() {
     ExprPtr init = expression();
     consume(TokenType::Semicolon, "expected ';' after variable expression");
     return Stmt{VarStmt{name, std::move(init)}};
+}
+
+std::vector<Stmt> Parser::block() {
+    std::vector<Stmt> statements;
+    while (!isAtEnd() && peek().type != TokenType::RightBrace) {
+        statements.push_back(declaration());
+    }
+    consume(TokenType::RightBrace, "expected '}' after block");
+    return statements;
 }
 
 std::vector<Stmt> Parser::parse() {

@@ -29,6 +29,7 @@ private:
     Stmt expressionStatement();
     Stmt declaration();
     Stmt varDeclaration();
+    std::vector<Stmt> block();
 
 public:
     Parser(std::vector<Token> tokens);
