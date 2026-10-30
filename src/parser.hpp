@@ -31,6 +31,7 @@ private:
     Stmt varDeclaration();
     std::vector<Stmt> block();
     Stmt ifStatement();
+    Stmt whileStatement();
 
 public:
     Parser(std::vector<Token> tokens);

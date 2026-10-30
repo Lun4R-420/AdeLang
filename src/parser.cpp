@@ -142,6 +142,9 @@ Stmt Parser::statement() {
     if (match({TokenType::If})) {
         return ifStatement();
     }
+    if (match({TokenType::While})) {
+        return whileStatement();
+    }
     return expressionStatement();
 }
 
@@ -195,6 +198,13 @@ Stmt Parser::ifStatement() {
         }
     }
     return Stmt{IfStmt{std::move(condition), std::move(thenBranch), std::move(elseBranch)}};
+}
+
+Stmt Parser::whileStatement() {
+    ExprPtr condition = expression();
+    consume(TokenType::LeftBrace, "expected '{' after while condition");
+    std::vector<Stmt> doBranch = block();
+    return Stmt{WhileStmt{std::move(condition), std::move(doBranch)}};
 }
 
 std::vector<Stmt> Parser::parse() {

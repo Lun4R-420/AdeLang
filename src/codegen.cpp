@@ -157,6 +157,17 @@ namespace {
             genBlock(ifstmt.elseBranch);
             out << ".Lend_" + std::to_string(id) + ":\n";
         }
+
+        void operator()(const WhileStmt& whilestmt) {
+            int id = labelCount++;
+            out << ".Lwhile_" + std::to_string(id) + ":\n";
+            std::visit(*this, whilestmt.condition->node);
+            emit("cmpq $0, %rax");
+            emit("je .Lwend_" + std::to_string(id));
+            genBlock(whilestmt.doBranch);
+            emit("jmp .Lwhile_" + std::to_string(id));
+            out << ".Lwend_" + std::to_string(id) + ":\n";
+        }
     };
 }
 

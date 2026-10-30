@@ -63,6 +63,11 @@ struct IfStmt {
     std::vector<Stmt> elseBranch;
 };
 
+struct WhileStmt {
+    ExprPtr condition;
+    std::vector<Stmt> doBranch;
+};
+
 struct Stmt {
-    std::variant<PrintStmt, ExprStmt, VarStmt, BlockStmt, IfStmt> node;
+    std::variant<PrintStmt, ExprStmt, VarStmt, BlockStmt, IfStmt, WhileStmt> node;
 };
