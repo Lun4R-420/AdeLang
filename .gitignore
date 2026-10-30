@@ -2,6 +2,7 @@ src/adec
 build/
 
 *.o
+*.d
 *.out
 *.exe
 

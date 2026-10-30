@@ -8,6 +8,7 @@ namespace {
         std::ostringstream out;
         std::vector<std::unordered_map<std::string, int>> scopes{ {} };
         int stackSize = 0;
+        int labelCount = 0;
         
         int lookup(const Token& name) {
             for (size_t i = scopes.size(); i >= 1; i--) {
@@ -15,6 +16,14 @@ namespace {
                 if (it != scopes[i - 1].end()) return it->second;
             }
             throw std::runtime_error("[line " + std::to_string(name.line) + "] Error: undefined variable '" + name.lexeme + "'");
+        }
+
+        void genBlock(const std::vector<Stmt>& statements) {
+            scopes.push_back({});
+            for (const Stmt& stmt : statements) {
+                std::visit(*this, stmt.node);
+            }
+            scopes.pop_back();
         }
 
         void emit(const std::string& line) {
@@ -134,11 +143,19 @@ namespace {
         }
 
         void operator()(const BlockStmt& block) {
-            scopes.push_back({});
-            for (const Stmt& stmt : block.statements) {
-                std::visit(*this, stmt.node);
-            }
-            scopes.pop_back();
+            genBlock(block.statements);
+        }
+
+        void operator()(const IfStmt& ifstmt) {
+            int id = labelCount++;
+            std::visit(*this, ifstmt.condition->node);
+            emit("cmpq $0, %rax");
+            emit("je .Lelse_" + std::to_string(id));
+            genBlock(ifstmt.thenBranch);
+            emit("jmp .Lend_" + std::to_string(id));
+            out << ".Lelse_" + std::to_string(id) + ":\n";
+            genBlock(ifstmt.elseBranch);
+            out << ".Lend_" + std::to_string(id) + ":\n";
         }
     };
 }

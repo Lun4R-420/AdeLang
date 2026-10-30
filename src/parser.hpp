@@ -30,6 +30,7 @@ private:
     Stmt declaration();
     Stmt varDeclaration();
     std::vector<Stmt> block();
+    Stmt ifStatement();
 
 public:
     Parser(std::vector<Token> tokens);

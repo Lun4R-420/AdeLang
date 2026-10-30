@@ -40,6 +40,7 @@ main:
     movl $0, %eax
     call printf@PLT
     movl $0, %eax
+    movq %rbp, %rsp
     popq %rbp
     ret
 .section .note.GNU-stack,"",@progbits

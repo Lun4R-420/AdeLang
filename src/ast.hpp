@@ -57,6 +57,12 @@ struct BlockStmt {
     std::vector<Stmt> statements;
 };
 
+struct IfStmt {
+    ExprPtr condition;
+    std::vector<Stmt> thenBranch;
+    std::vector<Stmt> elseBranch;
+};
+
 struct Stmt {
-    std::variant<PrintStmt, ExprStmt, VarStmt, BlockStmt> node;
+    std::variant<PrintStmt, ExprStmt, VarStmt, BlockStmt, IfStmt> node;
 };

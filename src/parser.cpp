@@ -139,6 +139,9 @@ Stmt Parser::statement() {
     if (match({TokenType::LeftBrace})) {
         return Stmt{BlockStmt{block()}};
     }
+    if (match({TokenType::If})) {
+        return ifStatement();
+    }
     return expressionStatement();
 }
 
@@ -176,6 +179,22 @@ std::vector<Stmt> Parser::block() {
     }
     consume(TokenType::RightBrace, "expected '}' after block");
     return statements;
+}
+
+Stmt Parser::ifStatement() {
+    ExprPtr condition = expression();
+    consume(TokenType::LeftBrace, "expected '{' after if condition");
+    std::vector<Stmt> thenBranch = block();
+    std::vector<Stmt> elseBranch;
+    if (match({TokenType::Else})) {
+        if (match({TokenType::If})) {
+            elseBranch.push_back(ifStatement());
+        } else {
+            consume(TokenType::LeftBrace, "expected '{' after else");
+            elseBranch = block();
+        }
+    }
+    return Stmt{IfStmt{std::move(condition), std::move(thenBranch), std::move(elseBranch)}};
 }
 
 std::vector<Stmt> Parser::parse() {
