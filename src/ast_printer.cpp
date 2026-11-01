@@ -22,6 +22,9 @@ struct AstPrinter {
     std::string operator() (const Assign&) {
         return "";
     }
+    std::string operator() (const Call&) {
+        return "";
+    }
 };
 
 std::string printAst(const Expr& expr) {

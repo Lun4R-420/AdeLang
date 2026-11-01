@@ -168,6 +168,12 @@ namespace {
             emit("jmp .Lwhile_" + std::to_string(id));
             out << ".Lwend_" + std::to_string(id) + ":\n";
         }
+
+        void operator()(const Call&) {}
+
+        void operator()(const FunStmt&) {}
+
+        void operator()(const ReturnStmt&) {}
     };
 }
 

@@ -36,8 +36,13 @@ struct Assign {
     ExprPtr value;
 };
 
+struct Call {
+    Token name;
+    std::vector<ExprPtr> args;
+};
+
 struct Expr {
-    std::variant<Literal, Unary, Binary, Grouping, Variable, Assign> node;
+    std::variant<Literal, Unary, Binary, Grouping, Variable, Assign, Call> node;
 };
 
 struct VarStmt {
@@ -68,6 +73,17 @@ struct WhileStmt {
     std::vector<Stmt> doBranch;
 };
 
+struct FunStmt {
+    Token name;
+    std::vector<Token> params;
+    std::vector<Stmt> body;
+};
+
+struct ReturnStmt {
+    Token keyword;
+    ExprPtr value;
+};
+
 struct Stmt {
-    std::variant<PrintStmt, ExprStmt, VarStmt, BlockStmt, IfStmt, WhileStmt> node;
+    std::variant<PrintStmt, ExprStmt, VarStmt, BlockStmt, IfStmt, WhileStmt, FunStmt, ReturnStmt> node;
 };
