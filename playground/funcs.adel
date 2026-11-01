@@ -1,0 +1,63 @@
+fun five() -> int {
+    return 5;
+}
+
+fun add(a: int, b: int) -> int {
+    return a + b;
+}
+
+fun max(a: int, b: int) -> int {
+    if a > b {
+        return a;
+    }
+    return b;
+}
+
+fun sumTo(n: int) -> int {
+    var total = 0;
+    var i = 1;
+    while i <= n {
+        total = total + i;
+        i = i + 1;
+    }
+    return total;
+}
+
+fun greet() {
+    print 42;
+}
+
+fun sixArgs(a: int, b: int, c: int, d: int, e: int, f: int) -> int {
+    return a + b * 10 + c * 100 + d * 1000 + e * 10000 + f * 100000;
+}
+
+fun fact(n: int) -> int {
+    if n <= 1 {
+        return 1;
+    }
+    return n * fact(n - 1);
+}
+
+fun fib(n: int) -> int {
+    if n < 2 {
+        return n;
+    }
+    return fib(n - 1) + fib(n - 2);
+}
+
+print five();
+print add(2, 3);
+print max(7, 4);
+print sumTo(100);
+greet();
+print sixArgs(1, 2, 3, 4, 5, 6);
+print 1 + add(10, 20);
+print add(1, add(2, 3));
+var x = 5;
+print fact(x);
+print fib(20);
+print later(7);
+
+fun later(n: int) -> int {
+    return n * 2;
+}

@@ -32,6 +32,7 @@ private:
     std::vector<Stmt> block();
     Stmt ifStatement();
     Stmt whileStatement();
+    Stmt funDeclaration();
 
 public:
     Parser(std::vector<Token> tokens);

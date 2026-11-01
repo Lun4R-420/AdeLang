@@ -164,6 +164,9 @@ Stmt Parser::declaration() {
     if (match({TokenType::Var})) {
         return varDeclaration();
     }
+    if (match({TokenType::Fun})) {
+        return funDeclaration();
+    }
     return statement();
 }
 
@@ -213,4 +216,28 @@ std::vector<Stmt> Parser::parse() {
         statements.push_back(declaration());
     }
     return statements;
+}
+
+Stmt Parser::funDeclaration() {
+    Token name = consume(TokenType::Identifier, "expected function name");
+    consume(TokenType::LeftParen, "expected '(' after function name");
+    std::vector<Token> params;
+    if (!check(TokenType::RightParen)) {
+        do {
+            Token param = consume(TokenType::Identifier, "expected parameter name");
+            consume(TokenType::Colon, "expected ':' after parameter name");
+            consume(TokenType::Identifier, "expected parameter type");
+            if (params.size() >= 6) {
+                throw std::runtime_error("[line " + std::to_string(param.line) + "] Error: functions can have at most 6 parameters");
+            }
+            params.push_back(param);
+        } while (match({TokenType::Comma}));
+    }
+    consume(TokenType::RightParen, "expected ')' after parameters");
+    if (match({TokenType::Arrow})) {
+        consume(TokenType::Identifier, "expected return type");
+    }
+    consume(TokenType::LeftBrace, "expected '{' before function body");
+    std::vector<Stmt> body = block();
+    return Stmt{FunStmt{std::move(name), std::move(params), std::move(body)}};
 }
