@@ -112,7 +112,21 @@ ExprPtr Parser::primary() {
         return std::make_unique<Expr>(Expr{Grouping{std::move(inner)}});
     }
     if (match({TokenType::Identifier})) {
-        return std::make_unique<Expr>(Expr{Variable{previous()}});
+        Token name = previous();
+        if (match({TokenType::LeftParen})) {
+            std::vector<ExprPtr> args;
+            if (!check(TokenType::RightParen)) {
+                do {
+                    if (args.size() >= 6) {
+                        throw std::runtime_error("[line " + std::to_string(peek().line) + "] Error: functions can have at most 6 parameters");
+                    }
+                    args.push_back(expression());
+                } while(match({TokenType::Comma}));
+            }
+            consume(TokenType::RightParen, "expected ')' after arguments");
+            return std::make_unique<Expr>(Expr{Call{name, std::move(args)}});
+        }
+        return std::make_unique<Expr>(Expr{Variable{name}});
     }
     throw std::runtime_error("[line " + std::to_string(peek().line) + "] Error: expected expression");
 }
@@ -144,6 +158,9 @@ Stmt Parser::statement() {
     }
     if (match({TokenType::While})) {
         return whileStatement();
+    }
+    if (match({TokenType::Return})) {
+        return returnStatement();
     }
     return expressionStatement();
 }
@@ -240,4 +257,11 @@ Stmt Parser::funDeclaration() {
     consume(TokenType::LeftBrace, "expected '{' before function body");
     std::vector<Stmt> body = block();
     return Stmt{FunStmt{std::move(name), std::move(params), std::move(body)}};
+}
+
+Stmt Parser::returnStatement() {
+    Token keyword = previous();
+    ExprPtr value = expression();
+    consume(TokenType::Semicolon, "expected ';' after return value");
+    return Stmt{ReturnStmt{keyword, std::move(value)}};
 }

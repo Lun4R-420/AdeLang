@@ -33,6 +33,7 @@ private:
     Stmt ifStatement();
     Stmt whileStatement();
     Stmt funDeclaration();
+    Stmt returnStatement();
 
 public:
     Parser(std::vector<Token> tokens);
