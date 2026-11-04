@@ -7,6 +7,7 @@ namespace {
     struct CodeGen {
         std::ostringstream out;
         std::vector<std::unordered_map<std::string, int>> scopes{ {} };
+        std::string returnLabel;
         int stackSize = 0;
         int labelCount = 0;
         
@@ -169,34 +170,75 @@ namespace {
             out << ".Lwend_" + std::to_string(id) + ":\n";
         }
 
-        void operator()(const Call&) {}
+        void operator()(const Call& call) {
+            emit("call ade_" + call.name.lexeme);
+        }
 
-        void operator()(const FunStmt&) {}
+        void operator()(const FunStmt& fun) {
+            throw std::runtime_error("[line " + std::to_string(fun.name.line) + "] Error: functions must be declared at the top level");
+        }
 
-        void operator()(const ReturnStmt&) {}
+        void operator()(const ReturnStmt& ret) {
+            std::visit(*this, ret.value->node);
+            emit("jmp " + returnLabel);
+        }
     };
 }
 
-std::string generateProgram(const std::vector<Stmt>& program) {
+std::string generateFunction(const std::string& label, const std::vector<const Stmt*>& body, int& labelCount) {
     CodeGen gen;
-    for (const Stmt& stmt : program) {
-        std::visit(gen, stmt.node);
+    gen.returnLabel = ".Lret_" + label;
+    gen.labelCount = labelCount;
+    for (const Stmt* stmt : body) {
+        std::visit(gen, stmt->node);
     }
-    std::string body = gen.out.str();
+    labelCount = gen.labelCount;
+    std::string func_body = gen.out.str();
     int frameSize = (gen.stackSize + 15) / 16 * 16;
 
     std::ostringstream result;
-    result << ".section .rodata\nfmt: .string \"%lld\\n\"\n.text\n.globl main\nmain:\n";
+    result << label + ":\n";
     result << "    pushq %rbp\n";
     result << "    movq %rsp, %rbp\n";
+    
     if (frameSize > 0) {
         result << "    subq $" << frameSize << ", %rsp\n";
     }
-    result << body;
-    result << "    movl $0, %eax\n";
+
+    result << func_body;
+    result << "    movq $0, %rax\n";
+    result << gen.returnLabel + ":\n";
     result << "    movq %rbp, %rsp\n";
     result << "    popq %rbp\n";
     result << "    ret\n";
+    
+    return result.str();
+}
+
+std::string generateProgram(const std::vector<Stmt>& program) {
+    std::vector<const FunStmt*> functions;
+    std::vector<const Stmt*> topLevel;
+    for (const Stmt& stmt : program) {
+        if (const FunStmt* fun = std::get_if<FunStmt>(&stmt.node)) {
+            functions.push_back(fun);
+        } else {
+            topLevel.push_back(&stmt);
+        }
+    }
+
+    int labelCount = 0;
+    std::ostringstream result;
+    result << ".section .rodata\nfmt: .string \"%lld\\n\"\n.text\n.globl main\n";
+
+    for (const FunStmt* fun : functions) {
+        std::vector<const Stmt*> body;
+        for (const Stmt& stmt : fun->body) {
+            body.push_back(&stmt);
+        }
+        result << generateFunction("ade_" + fun->name.lexeme, body, labelCount);
+    }
+
+    result << generateFunction("main", topLevel, labelCount);
     result << ".section .note.GNU-stack,\"\",@progbits\n";
     return result.str();
 }

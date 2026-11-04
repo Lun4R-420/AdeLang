@@ -44,7 +44,8 @@ main:
     leaq fmt(%rip), %rdi
     movl $0, %eax
     call printf@PLT
-    movl $0, %eax
+    movq $0, %rax
+.Lret_main:
     movq %rbp, %rsp
     popq %rbp
     ret
