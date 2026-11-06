@@ -3,6 +3,8 @@
 #include <sstream>
 #include <stdexcept>
 
+static const std::vector<std::string> argRegs = {"%rdi", "%rsi", "%rdx", "%rcx", "%r8", "%r9"};
+
 namespace {
     struct CodeGen {
         std::ostringstream out;
@@ -10,7 +12,25 @@ namespace {
         std::string returnLabel;
         int stackSize = 0;
         int labelCount = 0;
+        int pushDepth = 0;
+
+        void push() {
+            emit("pushq %rax");
+            pushDepth++;
+        }
+
+        void pop(const std::string& reg) {
+            emit("popq " + reg);
+            pushDepth--;
+        }
         
+        void emitCall(const std::string& target) {
+            bool pad = pushDepth % 2 != 0;
+            if (pad) emit("subq $8, %rsp");
+            emit("call " + target);
+            if (pad) emit("addq $8, %rsp");
+        }
+
         int lookup(const Token& name) {
             for (size_t i = scopes.size(); i >= 1; i--) {
                 auto it = scopes[i - 1].find(name.lexeme);
@@ -60,10 +80,10 @@ namespace {
 
         void operator()(const Binary& bin) {
             std::visit(*this, bin.left->node);
-            emit("pushq %rax");
+            push();
             std::visit(*this, bin.right->node);
             emit("movq %rax, %rcx");
-            emit("popq %rax");
+            pop("%rax");
             switch (bin.op.type) {
                 case TokenType::Plus:
                     emit("addq %rcx, %rax");
@@ -115,7 +135,7 @@ namespace {
             emit("movq %rax, %rsi");
             emit("leaq fmt(%rip), %rdi");
             emit("movl $0, %eax");
-            emit("call printf@PLT");
+            emitCall("printf@PLT");
         }
 
         void operator()(const ExprStmt& stmt) {
@@ -171,7 +191,14 @@ namespace {
         }
 
         void operator()(const Call& call) {
-            emit("call ade_" + call.name.lexeme);
+            for (const ExprPtr& arg : call.args) {
+                std::visit(*this, arg->node);
+                push();
+            }
+            for (size_t i = call.args.size(); i > 0; i--) {
+                pop(argRegs[i - 1]);
+            }
+            emitCall("ade_" + call.name.lexeme);
         }
 
         void operator()(const FunStmt& fun) {
@@ -185,10 +212,17 @@ namespace {
     };
 }
 
-std::string generateFunction(const std::string& label, const std::vector<const Stmt*>& body, int& labelCount) {
+std::string generateFunction(const std::string& label, const std::vector<const Stmt*>& body, const std::vector<Token>& params, int& labelCount) {
     CodeGen gen;
     gen.returnLabel = ".Lret_" + label;
     gen.labelCount = labelCount;
+
+    for (size_t i = 0; i < params.size(); i++) {
+        gen.stackSize += 8;
+        gen.scopes.back()[params[i].lexeme] = -gen.stackSize;
+        gen.emit("movq " + argRegs[i] + ", " + std::to_string(-gen.stackSize) + "(%rbp)");
+    }
+
     for (const Stmt* stmt : body) {
         std::visit(gen, stmt->node);
     }
@@ -235,10 +269,10 @@ std::string generateProgram(const std::vector<Stmt>& program) {
         for (const Stmt& stmt : fun->body) {
             body.push_back(&stmt);
         }
-        result << generateFunction("ade_" + fun->name.lexeme, body, labelCount);
+        result << generateFunction("ade_" + fun->name.lexeme, body, fun->params, labelCount);
     }
 
-    result << generateFunction("main", topLevel, labelCount);
+    result << generateFunction("main", topLevel, {}, labelCount);
     result << ".section .note.GNU-stack,\"\",@progbits\n";
     return result.str();
 }
