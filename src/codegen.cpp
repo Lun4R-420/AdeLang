@@ -9,7 +9,9 @@ namespace {
     struct CodeGen {
         std::ostringstream out;
         std::vector<std::unordered_map<std::string, int>> scopes{ {} };
+        std::unordered_map<std::string, size_t> table;
         std::string returnLabel;
+        bool inFunction = false;
         int stackSize = 0;
         int labelCount = 0;
         int pushDepth = 0;
@@ -191,6 +193,16 @@ namespace {
         }
 
         void operator()(const Call& call) {
+            auto it = table.find(call.name.lexeme);
+            if (it == table.end()) {
+                throw std::runtime_error("[line " + std::to_string(call.name.line) + "] Error: undefined function '" + call.name.lexeme + "'");
+            }
+
+            if (it->second != call.args.size()) {
+                throw std::runtime_error("[line " + std::to_string(call.name.line) + "] Error: function '" + call.name.lexeme + "' expects "
+            + std::to_string(it->second) + " arguments, got " + std::to_string(call.args.size()));
+            }
+
             for (const ExprPtr& arg : call.args) {
                 std::visit(*this, arg->node);
                 push();
@@ -206,16 +218,22 @@ namespace {
         }
 
         void operator()(const ReturnStmt& ret) {
+            if (!inFunction) {
+                throw std::runtime_error("[line " + std::to_string(ret.keyword.line) + "] Error: return outside of a function");
+            }
             std::visit(*this, ret.value->node);
             emit("jmp " + returnLabel);
         }
     };
 }
 
-std::string generateFunction(const std::string& label, const std::vector<const Stmt*>& body, const std::vector<Token>& params, int& labelCount) {
+std::string generateFunction(const std::string& label, const std::vector<const Stmt*>& body, const std::vector<Token>& params, int& labelCount,
+                            const std::unordered_map<std::string, size_t>& table) {
     CodeGen gen;
     gen.returnLabel = ".Lret_" + label;
+    gen.inFunction = label == "main" ? false : true;
     gen.labelCount = labelCount;
+    gen.table = table;
 
     for (size_t i = 0; i < params.size(); i++) {
         gen.stackSize += 8;
@@ -252,9 +270,14 @@ std::string generateFunction(const std::string& label, const std::vector<const S
 std::string generateProgram(const std::vector<Stmt>& program) {
     std::vector<const FunStmt*> functions;
     std::vector<const Stmt*> topLevel;
+    std::unordered_map<std::string, size_t> function_table;
     for (const Stmt& stmt : program) {
         if (const FunStmt* fun = std::get_if<FunStmt>(&stmt.node)) {
             functions.push_back(fun);
+            if (function_table.find(fun->name.lexeme) != function_table.end()) {
+                throw std::runtime_error("[line " + std::to_string(fun->name.line) + "] Error: function '" + fun->name.lexeme + "' already declared");
+            }
+            function_table[fun->name.lexeme] = fun->params.size();
         } else {
             topLevel.push_back(&stmt);
         }
@@ -269,10 +292,10 @@ std::string generateProgram(const std::vector<Stmt>& program) {
         for (const Stmt& stmt : fun->body) {
             body.push_back(&stmt);
         }
-        result << generateFunction("ade_" + fun->name.lexeme, body, fun->params, labelCount);
+        result << generateFunction("ade_" + fun->name.lexeme, body, fun->params, labelCount, function_table);
     }
 
-    result << generateFunction("main", topLevel, {}, labelCount);
+    result << generateFunction("main", topLevel, {}, labelCount, function_table);
     result << ".section .note.GNU-stack,\"\",@progbits\n";
     return result.str();
 }
