@@ -47,8 +47,12 @@ struct Call {
     std::vector<ExprPtr> args;
 };
 
+struct BoolLiteral {
+    bool value;
+};
+
 struct Expr {
-    std::variant<Literal, Unary, Binary, Grouping, Variable, Assign, Call> node;
+    std::variant<Literal, BoolLiteral, Unary, Binary, Grouping, Variable, Assign, Call> node;
 };
 
 struct VarStmt {

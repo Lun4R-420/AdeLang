@@ -25,6 +25,10 @@ struct AstPrinter {
     std::string operator() (const Call&) {
         return "";
     }
+    std::string operator() (const BoolLiteral& boolLit) {
+        std::string s = boolLit.value ? "true" : "false";
+        return s;
+    }
 };
 
 std::string printAst(const Expr& expr) {

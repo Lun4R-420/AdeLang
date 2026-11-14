@@ -106,6 +106,11 @@ ExprPtr Parser::primary() {
             throw std::runtime_error("[line " + std::to_string(previous().line) + "] Error: number literal too large");
         }
     }
+    if (match({TokenType::True, TokenType::False})) {
+        Token token = previous();
+        bool value = token.type == TokenType::True;
+        return std::make_unique<Expr>(Expr{BoolLiteral{value}});
+    }
     if (match({TokenType::LeftParen})) {
         ExprPtr inner = expression();
         consume(TokenType::RightParen, "expected ')' after expression");

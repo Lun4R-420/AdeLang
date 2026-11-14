@@ -64,6 +64,11 @@ namespace {
             emit(instr);
         }
 
+        void operator()(const BoolLiteral &boolLit) {
+            std::string instr = "movq $" + std::to_string(boolLit.value) + ", %rax";
+            emit(instr);
+        }
+
         void operator()(const Unary& unary) {
             std::visit(*this, unary.right->node);
             switch (unary.op.type) {
