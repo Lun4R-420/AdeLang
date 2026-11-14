@@ -49,6 +49,26 @@ ExprPtr Parser::expression() {
     return assignment();
 }
 
+ExprPtr Parser::logicOr() {
+    ExprPtr left = logicAnd();
+    while (match({TokenType::Or})) {
+        Token op = previous();
+        ExprPtr right = logicAnd();
+        left = std::make_unique<Expr>(Expr{Logical{std::move(left), std::move(right), op}});
+    }
+    return left;
+}
+
+ExprPtr Parser::logicAnd() {
+    ExprPtr left = equality();
+    while (match({TokenType::And})) {
+        Token op = previous();
+        ExprPtr right = equality();
+        left = std::make_unique<Expr>(Expr{Logical{std::move(left), std::move(right), op}});
+    }
+    return left;
+}
+
 ExprPtr Parser::equality() {
     ExprPtr left = comparison();
     while (match({TokenType::EqualEqual, TokenType::BangEqual})) {
@@ -137,7 +157,7 @@ ExprPtr Parser::primary() {
 }
 
 ExprPtr Parser::assignment() {
-    ExprPtr target = equality();
+    ExprPtr target = logicOr();
     if (match({TokenType::Equal})) {
         Token equals = previous();
         ExprPtr value = assignment();

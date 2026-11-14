@@ -29,6 +29,12 @@ struct Binary {
     Token op;
 };
 
+struct Logical {
+    std::unique_ptr<Expr> left;
+    std::unique_ptr<Expr> right;
+    Token op;
+};
+
 struct Grouping {
     std::unique_ptr<Expr> child;
 };
@@ -52,7 +58,7 @@ struct BoolLiteral {
 };
 
 struct Expr {
-    std::variant<Literal, BoolLiteral, Unary, Binary, Grouping, Variable, Assign, Call> node;
+    std::variant<Literal, BoolLiteral, Unary, Binary, Logical, Grouping, Variable, Assign, Call> node;
 };
 
 struct VarStmt {

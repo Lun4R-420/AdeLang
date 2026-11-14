@@ -1,0 +1,51 @@
+var a = true;
+var b: bool = false;
+var n: int = 42;
+var m = n + 8;
+print a;
+print b;
+print n;
+print m;
+
+fun isEven(x: int) -> bool {
+    return x % 2 == 0;
+}
+
+fun square(x: int) -> int {
+    return x * x;
+}
+
+fun both(p: bool, q: bool) -> bool {
+    return p and q;
+}
+
+fun greet() {
+    print 7;
+}
+
+print isEven(4);
+print isEven(7);
+print square(9);
+print both(true, isEven(10));
+print both(true, false);
+greet();
+
+var flag: bool = square(3) > 5;
+if flag {
+    print 1;
+} else {
+    print 0;
+}
+
+var done = false;
+var k: int = 0;
+while !done {
+    k = k + 1;
+    if k == 3 {
+        done = true;
+    }
+}
+print k;
+
+b = !b;
+print b;

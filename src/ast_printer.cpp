@@ -29,6 +29,10 @@ struct AstPrinter {
         std::string s = boolLit.value ? "true" : "false";
         return s;
     }
+    std::string operator() (const Logical& logical) {
+        std::string s = "(" + logical.op.lexeme + " " + printAst(*logical.left) + " " + printAst(*logical.right) + ")";
+        return s;
+    }
 };
 
 std::string printAst(const Expr& expr) {

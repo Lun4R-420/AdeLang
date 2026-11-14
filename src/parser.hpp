@@ -17,6 +17,8 @@ private:
     bool match(std::initializer_list<TokenType> tokenList);
     const Token& consume(TokenType type, const std::string& message);
     ExprPtr expression();
+    ExprPtr logicAnd();
+    ExprPtr logicOr();
     ExprPtr equality();
     ExprPtr comparison();
     ExprPtr term();

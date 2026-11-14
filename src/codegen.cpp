@@ -133,6 +133,34 @@ namespace {
             }
         }
 
+        void operator()(const Logical& logical) {
+            int id = labelCount++;
+            std::visit(*this, logical.left->node);
+            emit("cmpq $0, %rax");
+            switch(logical.op.type) {
+                case TokenType::And:
+                    emit("je .Land_end_" + std::to_string(id));
+                    std::visit(*this, logical.right->node);
+                    emit("movq $0, %rcx");
+                    compare("setne");
+                    out << ".Land_end_" + std::to_string(id) + ":\n";
+                    break;
+                case TokenType::Or:
+                    emit("jne .Lor_true_" + std::to_string(id));
+                    std::visit(*this, logical.right->node);
+                    emit("movq $0, %rcx");
+                    compare("setne");
+                    emit("jmp .Lor_end_" + std::to_string(id));
+                    out << ".Lor_true_" + std::to_string(id) + ":\n";
+                    emit("movq $1, %rax");
+                    out << ".Lor_end_" + std::to_string(id) + ":\n";
+                    break;
+                default:
+                    throw std::runtime_error("[line " + std::to_string(logical.op.line) + "] Error: unsupported logical operator '" + logical.op.lexeme + "'");
+            }
+
+        }
+
         void operator()(const Grouping& group) {
             std::visit(*this, group.child->node);
         }
