@@ -189,10 +189,14 @@ Stmt Parser::declaration() {
 
 Stmt Parser::varDeclaration() {
     Token name = consume(TokenType::Identifier, "expected variable name");
+    std::optional<Token> type;
+    if (match({TokenType::Colon})) {
+        type = consume(TokenType::Identifier, "expected variable type");
+    }
     consume(TokenType::Equal, "expected '=' after variable name");
     ExprPtr init = expression();
     consume(TokenType::Semicolon, "expected ';' after variable expression");
-    return Stmt{VarStmt{name, std::move(init)}};
+    return Stmt{VarStmt{name, std::move(init), std::move(type)}};
 }
 
 std::vector<Stmt> Parser::block() {
@@ -238,25 +242,26 @@ std::vector<Stmt> Parser::parse() {
 Stmt Parser::funDeclaration() {
     Token name = consume(TokenType::Identifier, "expected function name");
     consume(TokenType::LeftParen, "expected '(' after function name");
-    std::vector<Token> params;
+    std::vector<Param> params;
     if (!check(TokenType::RightParen)) {
         do {
             Token param = consume(TokenType::Identifier, "expected parameter name");
             consume(TokenType::Colon, "expected ':' after parameter name");
-            consume(TokenType::Identifier, "expected parameter type");
+            Token type = consume(TokenType::Identifier, "expected parameter type");
             if (params.size() >= 6) {
                 throw std::runtime_error("[line " + std::to_string(param.line) + "] Error: functions can have at most 6 parameters");
             }
-            params.push_back(param);
+            params.push_back(Param{param, type});
         } while (match({TokenType::Comma}));
     }
     consume(TokenType::RightParen, "expected ')' after parameters");
+    std::optional<Token> return_type;
     if (match({TokenType::Arrow})) {
-        consume(TokenType::Identifier, "expected return type");
+        return_type = consume(TokenType::Identifier, "expected return type");
     }
     consume(TokenType::LeftBrace, "expected '{' before function body");
     std::vector<Stmt> body = block();
-    return Stmt{FunStmt{std::move(name), std::move(params), std::move(body)}};
+    return Stmt{FunStmt{std::move(name), std::move(params), std::move(body), std::move(return_type)}};
 }
 
 Stmt Parser::returnStatement() {

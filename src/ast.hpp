@@ -3,10 +3,16 @@
 #include <memory>
 #include <variant>
 #include <vector>
+#include <optional>
 
 struct Expr;
 using ExprPtr = std::unique_ptr<Expr>;
 struct Stmt;
+
+struct Param {
+    Token name;
+    Token type;
+};
 
 struct Literal {
     long long number;
@@ -48,6 +54,7 @@ struct Expr {
 struct VarStmt {
     Token name;
     ExprPtr init;
+    std::optional<Token> type;
 };
 
 struct PrintStmt {
@@ -75,8 +82,9 @@ struct WhileStmt {
 
 struct FunStmt {
     Token name;
-    std::vector<Token> params;
+    std::vector<Param> params;
     std::vector<Stmt> body;
+    std::optional<Token> type;
 };
 
 struct ReturnStmt {

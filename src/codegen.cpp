@@ -227,7 +227,7 @@ namespace {
     };
 }
 
-std::string generateFunction(const std::string& label, const std::vector<const Stmt*>& body, const std::vector<Token>& params, int& labelCount,
+std::string generateFunction(const std::string& label, const std::vector<const Stmt*>& body, const std::vector<Param>& params, int& labelCount,
                             const std::unordered_map<std::string, size_t>& table) {
     CodeGen gen;
     gen.returnLabel = ".Lret_" + label;
@@ -237,7 +237,7 @@ std::string generateFunction(const std::string& label, const std::vector<const S
 
     for (size_t i = 0; i < params.size(); i++) {
         gen.stackSize += 8;
-        gen.scopes.back()[params[i].lexeme] = -gen.stackSize;
+        gen.scopes.back()[params[i].name.lexeme] = -gen.stackSize;
         gen.emit("movq " + argRegs[i] + ", " + std::to_string(-gen.stackSize) + "(%rbp)");
     }
 
