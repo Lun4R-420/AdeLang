@@ -1,5 +1,6 @@
 #pragma once
 #include "token.hpp"
+#include "types.hpp"
 #include <memory>
 #include <variant>
 #include <vector>
@@ -59,6 +60,7 @@ struct BoolLiteral {
 
 struct Expr {
     std::variant<Literal, BoolLiteral, Unary, Binary, Logical, Grouping, Variable, Assign, Call> node;
+    Type type = Type::Unknown;
 };
 
 struct VarStmt {
