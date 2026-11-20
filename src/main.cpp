@@ -6,6 +6,7 @@
 #include "scanner.hpp"
 #include "parser.hpp"
 #include "codegen.hpp"
+#include "typechecker.hpp"
 
 std::string readFile(const std::string& path) {
     std::ifstream file(path);
@@ -48,6 +49,7 @@ int main(int argc, char* argv[]) {
     std::string assembly;
     try {
         std::vector<Stmt> program = parser.parse();
+        typeCheck(program);
         assembly = generateProgram(program);
     } catch (const std::runtime_error& e) {
         std::cerr << e.what() << '\n';
