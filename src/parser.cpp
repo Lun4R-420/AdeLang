@@ -191,9 +191,10 @@ Stmt Parser::statement() {
 }
 
 Stmt Parser::printStatement() {
+    Token keyword = previous();
     ExprPtr value = expression();
     consume(TokenType::Semicolon, "expected ';' after expression");
-    return Stmt{PrintStmt{std::move(value)}};
+    return Stmt{PrintStmt{keyword, std::move(value)}};
 }
 
 Stmt Parser::expressionStatement() {
@@ -234,6 +235,7 @@ std::vector<Stmt> Parser::block() {
 }
 
 Stmt Parser::ifStatement() {
+    Token keyword = previous();
     ExprPtr condition = expression();
     consume(TokenType::LeftBrace, "expected '{' after if condition");
     std::vector<Stmt> thenBranch = block();
@@ -246,14 +248,15 @@ Stmt Parser::ifStatement() {
             elseBranch = block();
         }
     }
-    return Stmt{IfStmt{std::move(condition), std::move(thenBranch), std::move(elseBranch)}};
+    return Stmt{IfStmt{keyword, std::move(condition), std::move(thenBranch), std::move(elseBranch)}};
 }
 
 Stmt Parser::whileStatement() {
+    Token keyword = previous();
     ExprPtr condition = expression();
     consume(TokenType::LeftBrace, "expected '{' after while condition");
     std::vector<Stmt> doBranch = block();
-    return Stmt{WhileStmt{std::move(condition), std::move(doBranch)}};
+    return Stmt{WhileStmt{keyword, std::move(condition), std::move(doBranch)}};
 }
 
 std::vector<Stmt> Parser::parse() {

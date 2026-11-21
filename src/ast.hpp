@@ -70,6 +70,7 @@ struct VarStmt {
 };
 
 struct PrintStmt {
+    Token keyword;
     ExprPtr expr;
 };
 
@@ -82,12 +83,14 @@ struct BlockStmt {
 };
 
 struct IfStmt {
+    Token keyword;
     ExprPtr condition;
     std::vector<Stmt> thenBranch;
     std::vector<Stmt> elseBranch;
 };
 
 struct WhileStmt {
+    Token keyword;
     ExprPtr condition;
     std::vector<Stmt> doBranch;
 };

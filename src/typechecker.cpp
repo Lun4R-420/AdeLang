@@ -1,13 +1,21 @@
 #include "typechecker.hpp"
 #include <string>
+#include <optional>
 #include <vector>
 #include <unordered_map>
 #include <stdexcept>
 #include <utility>
 
 namespace {
+    struct Signature {
+        std::vector<Type> param_types;
+        Type retType;
+    };
+
     struct TypeChecker {
         std::vector<std::unordered_map<std::string, Type>> scopes = { {} };
+        std::unordered_map<std::string, Signature> functions;
+        std::optional<Type> currentReturn;
 
         Type lookup(const Token& name) {
             for (size_t i = scopes.size(); i >= 1; i--) {
@@ -94,14 +102,30 @@ namespace {
             return declared;
         }
         Type operator() (const Call& call) {
-            for (const ExprPtr& arg : call.args) {
-                check(*arg);
+            auto it = functions.find(call.name.lexeme);
+            if (it == functions.end()) {
+                error(call.name, "undefined function '" + call.name.lexeme + "'");
             }
-            return Type::Unknown;
+            const Signature& sig = it->second;
+            if (call.args.size() != sig.param_types.size()) {
+                error(call.name, "function '" + call.name.lexeme + "' expects " + std::to_string(sig.param_types.size())
+                    + " arguments, got " + std::to_string(call.args.size()));
+            }
+            for (size_t i = 0; i < call.args.size(); i++) {
+                Type argType = check(*call.args[i]);
+                if (mismatch(argType, sig.param_types[i])) {
+                    error(call.name, "argument " + std::to_string(i + 1) + " of '" + call.name.lexeme + "' expects "
+                        + typeName(sig.param_types[i]) + ", got " + typeName(argType));
+                }
+            }
+            return sig.retType;
         }
 
         void operator() (const PrintStmt& print) {
-            check(*print.expr);
+            Type type = check(*print.expr);
+            if (type == Type::Void) {
+                error(print.keyword, "cannot use the result of a function without a return type");
+            }
         }
 
         void operator() (const ExprStmt& stmt) {
@@ -110,6 +134,9 @@ namespace {
 
         void operator() (const VarStmt& var) {
             Type type = check(*var.init);
+            if (type == Type::Void) {
+                error(var.name, "cannot use the result of a function without a return type");
+            }
             if (var.type) {
                 Type declared = tokenToType(*var.type);
                 if (mismatch(type, declared)) {
@@ -137,27 +164,45 @@ namespace {
 
         void operator() (const IfStmt& ifstmt) {
             Type ifType = check(*ifstmt.condition);
+            if (mismatch(ifType, Type::Bool)) {
+                error(ifstmt.keyword, "if condition must be bool, got " + std::string(typeName(ifType)));
+            }
             checkBlock(ifstmt.thenBranch);
             checkBlock(ifstmt.elseBranch);
         }
 
         void operator() (const WhileStmt& whilestmt) {
             Type condType = check(*whilestmt.condition);
+            if (mismatch(condType, Type::Bool)) {
+                error(whilestmt.keyword, "while condition must be bool, got " + std::string(typeName(condType)));
+            }
             checkBlock(whilestmt.doBranch);
         }
 
         void operator() (const FunStmt& fun) {
             std::vector<std::unordered_map<std::string, Type>> backUp = std::move(scopes);
             scopes = {{}};
+            std::optional<Type> backUpRet = currentReturn;
+            currentReturn = functions[fun.name.lexeme].retType;
             for (const auto& param : fun.params) {
                 scopes.back()[param.name.lexeme] = tokenToType(param.type);
             }
             checkBlock(fun.body);
             scopes = std::move(backUp);
+            currentReturn = backUpRet;
         }
         
         void operator() (const ReturnStmt& ret) {
             Type retType = check(*ret.value);
+            if (!currentReturn) {
+                error(ret.keyword, "return outside of a function");
+            }
+            if (*currentReturn == Type::Void) {
+                error(ret.keyword, "cannot return a value from a function without a return type");
+            }
+            if (mismatch(retType, *currentReturn)) {
+                error(ret.keyword, "function returns " + std::string(typeName(*currentReturn)) + ", got " + typeName(retType));
+            }
         }
 
         Type check(Expr& expr) {
@@ -178,6 +223,20 @@ namespace {
 
 void typeCheck(std::vector<Stmt>& program) {
     TypeChecker checker;
+    for (Stmt& stmt : program) {
+        if (const FunStmt* fun = std::get_if<FunStmt>(&stmt.node)) {
+            std::vector<Type> param_types;
+            for (const Param& param : fun->params) {
+                param_types.push_back(tokenToType(param.type));
+            }
+            Type retType = fun->type ? tokenToType(*fun->type) : Type::Void;
+            Signature s = Signature{std::move(param_types), retType};
+            if (checker.functions.find(fun->name.lexeme) != checker.functions.end()) {
+                checker.error(fun->name, "function already declared");
+            }
+            checker.functions[fun->name.lexeme] = s;
+        }
+    }
     for (Stmt& stmt : program) {
         std::visit(checker, stmt.node);
     }
