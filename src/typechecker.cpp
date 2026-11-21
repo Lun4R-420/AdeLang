@@ -1,10 +1,22 @@
 #include "typechecker.hpp"
 #include <string>
 #include <vector>
+#include <unordered_map>
 #include <stdexcept>
+#include <utility>
 
 namespace {
     struct TypeChecker {
+        std::vector<std::unordered_map<std::string, Type>> scopes = { {} };
+
+        Type lookup(const Token& name) {
+            for (size_t i = scopes.size(); i >= 1; i--) {
+                auto it = scopes[i - 1].find(name.lexeme);
+                if (it != scopes[i - 1].end()) return it->second;
+            }
+            error(name, "undefined variable '" + name.lexeme + "'");
+        }
+
         Type operator() (const Literal&) {
             return Type::Int;
         }
@@ -70,12 +82,16 @@ namespace {
             }
             return Type::Bool;
         }
-        Type operator() (const Variable&) {
-            return Type::Unknown;
+        Type operator() (const Variable& var) {
+            return lookup(var.name);
         }
         Type operator() (const Assign& assign) {
             Type type = check(*assign.value);
-            return Type::Unknown;
+            Type declared = lookup(assign.name);
+            if (mismatch(type, declared)) {
+                error(assign.name, "cannot assign " + std::string(typeName(type)) + " to variable '" + assign.name.lexeme + "' of type " + typeName(declared));
+            }
+            return declared;
         }
         Type operator() (const Call& call) {
             for (const ExprPtr& arg : call.args) {
@@ -94,12 +110,25 @@ namespace {
 
         void operator() (const VarStmt& var) {
             Type type = check(*var.init);
+            if (var.type) {
+                Type declared = tokenToType(*var.type);
+                if (mismatch(type, declared)) {
+                    error(var.name, "variable '" + var.name.lexeme + "' declared as " + typeName(declared) + " but initialized with " + typeName(type));
+                }
+                type = declared;
+            }
+            if (scopes.back().find(var.name.lexeme) != scopes.back().end()) {
+                error(var.name, "variable '" + var.name.lexeme + "' already declared");
+            }
+            scopes.back()[var.name.lexeme] = type;
         }
 
         void checkBlock(const std::vector<Stmt>& statements) {
+            scopes.push_back({});
             for (const Stmt& stmt : statements) {
                 std::visit(*this, stmt.node);
             }
+            scopes.pop_back();
         }
 
         void operator() (const BlockStmt& block) {
@@ -111,13 +140,22 @@ namespace {
             checkBlock(ifstmt.thenBranch);
             checkBlock(ifstmt.elseBranch);
         }
+
         void operator() (const WhileStmt& whilestmt) {
             Type condType = check(*whilestmt.condition);
             checkBlock(whilestmt.doBranch);
         }
+
         void operator() (const FunStmt& fun) {
+            std::vector<std::unordered_map<std::string, Type>> backUp = std::move(scopes);
+            scopes = {{}};
+            for (const auto& param : fun.params) {
+                scopes.back()[param.name.lexeme] = tokenToType(param.type);
+            }
             checkBlock(fun.body);
+            scopes = std::move(backUp);
         }
+        
         void operator() (const ReturnStmt& ret) {
             Type retType = check(*ret.value);
         }
