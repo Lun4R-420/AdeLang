@@ -126,6 +126,13 @@ ExprPtr Parser::primary() {
             throw std::runtime_error("[line " + std::to_string(previous().line) + "] Error: number literal too large");
         }
     }
+    if (match({TokenType::Float})) {
+        try {
+            return std::make_unique<Expr>(Expr{FloatLiteral{std::stod(previous().lexeme)}});
+        } catch (const std::out_of_range&) {
+            throw std::runtime_error("[line " + std::to_string(previous().line) + "] Error: float literal too large");
+        }
+    }
     if (match({TokenType::True, TokenType::False})) {
         Token token = previous();
         bool value = token.type == TokenType::True;

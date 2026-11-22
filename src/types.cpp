@@ -7,6 +7,8 @@ const char* typeName(Type type) {
     switch (type) {
         case Type::Int: 
             return "int";
+        case Type::Float:
+            return "float";
         case Type::Bool:
             return "bool";
         case Type::Void:
@@ -19,6 +21,7 @@ const char* typeName(Type type) {
 
 static const std::unordered_map<std::string, Type> typeNames = {
     {"int", Type::Int},
+    {"float", Type::Float},
     {"bool", Type::Bool}
 };
 

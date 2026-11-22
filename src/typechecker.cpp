@@ -28,12 +28,19 @@ namespace {
         Type operator() (const Literal&) {
             return Type::Int;
         }
+
+        Type operator() (const FloatLiteral&) {
+            return Type::Float;
+        }
+
         Type operator() (const BoolLiteral&) {
             return Type::Bool;
         }
+
         Type operator() (const Grouping& group) {
             return check(*group.child);
         }
+
         Type operator() (const Unary& unary) {
             Type type = check(*unary.right);
             switch(unary.op.type) {
@@ -43,14 +50,15 @@ namespace {
                     }
                     return Type::Bool;
                 case TokenType::Minus:
-                    if (mismatch(type, Type::Int)) {
-                        error(unary.op, "operator '-' expects an int operand, got " + std::string(typeName(type)));
+                    if (!isNumeric(type)) {
+                        error(unary.op, "operator '-' expects an int or float operand, got " + std::string(typeName(type)));
                     }
-                    return Type::Int;
+                    return type;
                 default:
                     error(unary.op, "unsupported unary operator '" + unary.op.lexeme + "'");
             }
         }
+
         Type operator() (const Binary& bin) {
             Type left_type = check(*bin.left);
             Type right_type = check(*bin.right);
@@ -59,9 +67,15 @@ namespace {
                 case TokenType::Minus:
                 case TokenType::Star:
                 case TokenType::Slash:
+                    if (!isNumeric(left_type) || !isNumeric(right_type) || mismatch(left_type, right_type)) {
+                        error(bin.op, "operator '" + bin.op.lexeme + "' expects both int or both float operands, got " + 
+                        std::string(typeName(left_type)) + " and " + std::string(typeName(right_type)));
+                    }
+                    return left_type;
                 case TokenType::Percent:
                     if (mismatch(left_type, Type::Int) || mismatch(right_type, Type::Int)) {
-                        error(bin.op, "operator '" + bin.op.lexeme + "' expects int operands, got " + std::string(typeName(left_type)) + " and " + std::string(typeName(right_type)));
+                        error(bin.op, "operator '" + bin.op.lexeme + "' expects int operands, got " + std::string(typeName(left_type)) + 
+                        " and " + std::string(typeName(right_type)));
                     }
                     return Type::Int;
                 case TokenType::BangEqual:
@@ -74,14 +88,15 @@ namespace {
                 case TokenType::GreaterEqual:
                 case TokenType::Less:
                 case TokenType::LessEqual:
-                    if (mismatch(left_type, Type::Int) || mismatch(right_type, Type::Int)) {
-                        error(bin.op, "operator '" + bin.op.lexeme + "' expects int operands, got " + std::string(typeName(left_type)) + " and " + std::string(typeName(right_type)));
+                    if (!isNumeric(left_type) || !isNumeric(right_type) || mismatch(left_type, right_type)) {
+                        error(bin.op, "operator '" + bin.op.lexeme + "' expects both int or both float operands, got " + std::string(typeName(left_type)) + " and " + std::string(typeName(right_type)));
                     }
                     return Type::Bool;
                 default:
                     error(bin.op, "unsupported binary operator '" + bin.op.lexeme + "'");
             }
         }
+
         Type operator() (const Logical& logical) {
             Type left_type = check(*logical.left);
             Type right_type = check(*logical.right);
@@ -90,9 +105,11 @@ namespace {
             }
             return Type::Bool;
         }
+
         Type operator() (const Variable& var) {
             return lookup(var.name);
         }
+
         Type operator() (const Assign& assign) {
             Type type = check(*assign.value);
             Type declared = lookup(assign.name);
@@ -101,6 +118,7 @@ namespace {
             }
             return declared;
         }
+
         Type operator() (const Call& call) {
             auto it = functions.find(call.name.lexeme);
             if (it == functions.end()) {
@@ -229,6 +247,10 @@ namespace {
 
         bool mismatch(Type actual, Type expected) {
             return actual != expected;
+        }
+
+        bool isNumeric(Type t) {
+            return t == Type::Int || t == Type::Float;
         }
 
         [[noreturn]] void error(const Token& token, const std::string& message) {

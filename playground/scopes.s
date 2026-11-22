@@ -1,5 +1,6 @@
 .section .rodata
 fmt: .string "%lld\n"
+fmt_float: .string "%.15g\n"
 fmt_bool: .string "%s\n"
 str_true: .string "true"
 str_false: .string "false"

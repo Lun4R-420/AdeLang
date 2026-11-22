@@ -2,6 +2,7 @@
 #include <unordered_map>
 #include <sstream>
 #include <stdexcept>
+#include <bit>
 
 static const std::vector<std::string> argRegs = {"%rdi", "%rsi", "%rdx", "%rcx", "%r8", "%r9"};
 
@@ -53,6 +54,17 @@ namespace {
             out << "    " << line << '\n';
         }
 
+        void floatOp(const std::string& instr) {
+            emit(instr + " %xmm1, %xmm0");
+            emit("movq %xmm0, %rax");
+        }
+
+        void compareFloat(const std::string& setInstr) {
+            emit("ucomisd %xmm1, %xmm0");
+            emit(setInstr + " %al");
+            emit("movzbq %al, %rax");
+        }
+
         void compare(const std::string& setInstr) {
             emit("cmpq %rcx, %rax");
             emit(setInstr + " %al");
@@ -61,6 +73,11 @@ namespace {
 
         void operator()(const Literal& lit) {
             std::string instr = "movq $" + std::to_string(lit.number) + ", %rax";
+            emit(instr);
+        }
+
+        void operator()(const FloatLiteral& flit) {
+            std::string instr = "movabsq $" + std::to_string(std::bit_cast<long long>(flit.value)) + ", %rax"; 
             emit(instr);
         }
 
@@ -73,7 +90,12 @@ namespace {
             std::visit(*this, unary.right->node);
             switch (unary.op.type) {
                 case TokenType::Minus:
-                    emit("negq %rax");
+                    if (unary.right->type == Type::Int) {
+                        emit("negq %rax");
+                    } else if (unary.right->type == Type::Float) {
+                        emit("movabsq $0x8000000000000000, %rcx");
+                        emit("xorq %rcx, %rax");
+                    }
                     break;
                 case TokenType::Bang:
                     emit("cmpq $0, %rax");
@@ -91,19 +113,31 @@ namespace {
             std::visit(*this, bin.right->node);
             emit("movq %rax, %rcx");
             pop("%rax");
+            bool isFloat = bin.left->type == Type::Float;
+            if (isFloat) {
+                emit("movq %rax, %xmm0");
+                emit("movq %rcx, %xmm1");
+            }
             switch (bin.op.type) {
                 case TokenType::Plus:
-                    emit("addq %rcx, %rax");
+                    if (isFloat) floatOp("addsd");
+                    else emit("addq %rcx, %rax");
                     break;
                 case TokenType::Minus:
-                    emit("subq %rcx, %rax");
+                    if (isFloat) floatOp("subsd");
+                    else emit("subq %rcx, %rax");
                     break;
                 case TokenType::Star:
-                    emit("imulq %rcx, %rax");
+                    if (isFloat) floatOp("mulsd");
+                    else emit("imulq %rcx, %rax");
                     break;
                 case TokenType::Slash:
-                    emit("cqto");
-                    emit("idivq %rcx");
+                    if (isFloat) {
+                        floatOp("divsd");
+                    } else {
+                        emit("cqto");
+                        emit("idivq %rcx");
+                    }
                     break;
                 case TokenType::Percent:
                     emit("cqto");
@@ -111,22 +145,28 @@ namespace {
                     emit("movq %rdx, %rax");
                     break;
                 case TokenType::EqualEqual:
-                    compare("sete");
+                    if (isFloat) compareFloat("sete");
+                    else compare("sete");
                     break;
                 case TokenType::BangEqual:
-                    compare("setne");
+                    if (isFloat) compareFloat("setne");
+                    else compare("setne");
                     break;
                 case TokenType::Greater:
-                    compare("setg");
+                    if (isFloat) compareFloat("seta");
+                    else compare("setg");
                     break;
                 case TokenType::GreaterEqual:
-                    compare("setge");
+                    if (isFloat) compareFloat("setae");
+                    else compare("setge");
                     break;
                 case TokenType::Less:
-                    compare("setl");
+                    if (isFloat) compareFloat("setb");
+                    else compare("setl");
                     break;
                 case TokenType::LessEqual:
-                    compare("setle");
+                    if (isFloat) compareFloat("setbe");
+                    else compare("setle");
                     break;
                 default:
                     throw std::runtime_error("[line " + std::to_string(bin.op.line) + "] Error: unsupported binary operator '" + bin.op.lexeme + "'");
@@ -170,16 +210,21 @@ namespace {
             if (print.expr->type == Type::Int) {
                 emit("movq %rax, %rsi");
                 emit("leaq fmt(%rip), %rdi");
+                emit("movl $0, %eax");
             } else if (print.expr->type == Type::Bool) {
                 emit("cmpq $0, %rax");
                 emit("leaq str_true(%rip), %rsi");
                 emit("leaq str_false(%rip), %rcx");
                 emit("cmove %rcx, %rsi");
                 emit("leaq fmt_bool(%rip), %rdi");
+                emit("movl $0, %eax");
+            } else if (print.expr->type == Type::Float) {
+                emit("movq %rax, %xmm0");
+                emit("leaq fmt_float(%rip), %rdi");
+                emit("movl $1, %eax");
             } else {
                 throw std::runtime_error("[line " + std::to_string(print.keyword.line) + "] Error: cannot print value of type " + typeName(print.expr->type));
             }
-            emit("movl $0, %eax");
             emitCall("printf@PLT");
         }
 
@@ -328,7 +373,7 @@ std::string generateProgram(const std::vector<Stmt>& program) {
 
     int labelCount = 0;
     std::ostringstream result;
-    result << ".section .rodata\nfmt: .string \"%lld\\n\"\nfmt_bool: .string \"%s\\n\"\nstr_true: .string \"true\"\nstr_false: .string \"false\"\n.text\n.globl main\n";
+    result << ".section .rodata\nfmt: .string \"%lld\\n\"\nfmt_float: .string \"%.15g\\n\"\nfmt_bool: .string \"%s\\n\"\nstr_true: .string \"true\"\nstr_false: .string \"false\"\n.text\n.globl main\n";
 
     for (const FunStmt* fun : functions) {
         std::vector<const Stmt*> body;

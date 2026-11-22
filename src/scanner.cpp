@@ -161,11 +161,13 @@ void Scanner::string() {
 void Scanner::number() {
     while (isDigit(peek())) advance();
 
-    // if (peek() == '.' && isdigit(peekNext())) {
-    //     advance();
+    if (peek() == '.' && isdigit(peekNext())) {
+        advance();
 
-    //     while (isdigit(peek())) advance();
-    // }
+        while (isdigit(peek())) advance();
+        addToken(TokenType::Float);
+        return;
+    }
 
     addToken(TokenType::Number);
 }

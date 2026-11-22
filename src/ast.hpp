@@ -19,6 +19,10 @@ struct Literal {
     long long number;
 };
 
+struct FloatLiteral {
+    double value;
+};
+
 struct Unary {
     Token op;
     std::unique_ptr<Expr> right;
@@ -59,7 +63,7 @@ struct BoolLiteral {
 };
 
 struct Expr {
-    std::variant<Literal, BoolLiteral, Unary, Binary, Logical, Grouping, Variable, Assign, Call> node;
+    std::variant<Literal, FloatLiteral, BoolLiteral, Unary, Binary, Logical, Grouping, Variable, Assign, Call> node;
     Type type = Type::Unknown;
 };
 

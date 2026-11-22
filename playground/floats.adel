@@ -1,0 +1,41 @@
+print 1.5;
+print -2.25;
+print 1.5 + 2.25;
+print 10.0 / 4.0;
+print 0.1 + 0.2;
+print 3.0 * -1.5;
+print 123456789.125;
+print 1.0 / 3.0;
+
+print 2.5 > 1.5;
+print 1.5 <= 1.5;
+print 1.5 < 1.5;
+print 3.0 == 3.0;
+print 3.0 != 3.0;
+
+var x: float = 4.5;
+var y = x * 2.0;
+print -y;
+
+fun area(r: float) -> float {
+    return 3.14159 * r * r;
+}
+print area(2.0);
+
+fun absf(v: float) -> float {
+    if v < 0.0 {
+        return -v;
+    }
+    return v;
+}
+print absf(-2.5);
+print absf(1.25);
+
+var sum = 0.0;
+var i = 0;
+while i < 10 {
+    sum = sum + 0.5;
+    i = i + 1;
+}
+print sum;
+print i;

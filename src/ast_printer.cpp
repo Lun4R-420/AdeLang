@@ -33,6 +33,9 @@ struct AstPrinter {
         std::string s = "(" + logical.op.lexeme + " " + printAst(*logical.left) + " " + printAst(*logical.right) + ")";
         return s;
     }
+    std::string operator() (const FloatLiteral& flit) {
+        return std::to_string(flit.value);
+    }
 };
 
 std::string printAst(const Expr& expr) {

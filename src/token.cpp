@@ -29,6 +29,7 @@ const char* tokenTypeName(TokenType type) {
         case TokenType::Identifier: return "Identifier";
         case TokenType::String: return "String";
         case TokenType::Number: return "Number";
+        case TokenType::Float: return "Float";
         case TokenType::And: return "And";
         case TokenType::Else: return "Else";
         case TokenType::False: return "False";
