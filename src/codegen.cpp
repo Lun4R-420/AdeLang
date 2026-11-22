@@ -167,8 +167,18 @@ namespace {
 
         void operator()(const PrintStmt& print) {
             std::visit(*this, print.expr->node);
-            emit("movq %rax, %rsi");
-            emit("leaq fmt(%rip), %rdi");
+            if (print.expr->type == Type::Int) {
+                emit("movq %rax, %rsi");
+                emit("leaq fmt(%rip), %rdi");
+            } else if (print.expr->type == Type::Bool) {
+                emit("cmpq $0, %rax");
+                emit("leaq str_true(%rip), %rsi");
+                emit("leaq str_false(%rip), %rcx");
+                emit("cmove %rcx, %rsi");
+                emit("leaq fmt_bool(%rip), %rdi");
+            } else {
+                throw std::runtime_error("[line " + std::to_string(print.keyword.line) + "] Error: cannot print value of type " + typeName(print.expr->type));
+            }
             emit("movl $0, %eax");
             emitCall("printf@PLT");
         }
@@ -318,7 +328,7 @@ std::string generateProgram(const std::vector<Stmt>& program) {
 
     int labelCount = 0;
     std::ostringstream result;
-    result << ".section .rodata\nfmt: .string \"%lld\\n\"\n.text\n.globl main\n";
+    result << ".section .rodata\nfmt: .string \"%lld\\n\"\nfmt_bool: .string \"%s\\n\"\nstr_true: .string \"true\"\nstr_false: .string \"false\"\n.text\n.globl main\n";
 
     for (const FunStmt* fun : functions) {
         std::vector<const Stmt*> body;

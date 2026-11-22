@@ -1,5 +1,8 @@
 .section .rodata
 fmt: .string "%lld\n"
+fmt_bool: .string "%s\n"
+str_true: .string "true"
+str_false: .string "false"
 .text
 .globl main
 main:
@@ -35,8 +38,11 @@ main:
     cmpq %rcx, %rax
     sete %al
     movzbq %al, %rax
-    movq %rax, %rsi
-    leaq fmt(%rip), %rdi
+    cmpq $0, %rax
+    leaq str_true(%rip), %rsi
+    leaq str_false(%rip), %rcx
+    cmove %rcx, %rsi
+    leaq fmt_bool(%rip), %rdi
     movl $0, %eax
     call printf@PLT
     movq $0, %rax

@@ -1,5 +1,8 @@
 .section .rodata
 fmt: .string "%lld\n"
+fmt_bool: .string "%s\n"
+str_true: .string "true"
+str_false: .string "false"
 .text
 .globl main
 ade_isEven:
@@ -97,13 +100,19 @@ main:
     addq %rcx, %rax
     movq %rax, -32(%rbp)
     movq -8(%rbp), %rax
-    movq %rax, %rsi
-    leaq fmt(%rip), %rdi
+    cmpq $0, %rax
+    leaq str_true(%rip), %rsi
+    leaq str_false(%rip), %rcx
+    cmove %rcx, %rsi
+    leaq fmt_bool(%rip), %rdi
     movl $0, %eax
     call printf@PLT
     movq -16(%rbp), %rax
-    movq %rax, %rsi
-    leaq fmt(%rip), %rdi
+    cmpq $0, %rax
+    leaq str_true(%rip), %rsi
+    leaq str_false(%rip), %rcx
+    cmove %rcx, %rsi
+    leaq fmt_bool(%rip), %rdi
     movl $0, %eax
     call printf@PLT
     movq -24(%rbp), %rax
@@ -120,16 +129,22 @@ main:
     pushq %rax
     popq %rdi
     call ade_isEven
-    movq %rax, %rsi
-    leaq fmt(%rip), %rdi
+    cmpq $0, %rax
+    leaq str_true(%rip), %rsi
+    leaq str_false(%rip), %rcx
+    cmove %rcx, %rsi
+    leaq fmt_bool(%rip), %rdi
     movl $0, %eax
     call printf@PLT
     movq $7, %rax
     pushq %rax
     popq %rdi
     call ade_isEven
-    movq %rax, %rsi
-    leaq fmt(%rip), %rdi
+    cmpq $0, %rax
+    leaq str_true(%rip), %rsi
+    leaq str_false(%rip), %rcx
+    cmove %rcx, %rsi
+    leaq fmt_bool(%rip), %rdi
     movl $0, %eax
     call printf@PLT
     movq $9, %rax
@@ -152,8 +167,11 @@ main:
     popq %rsi
     popq %rdi
     call ade_both
-    movq %rax, %rsi
-    leaq fmt(%rip), %rdi
+    cmpq $0, %rax
+    leaq str_true(%rip), %rsi
+    leaq str_false(%rip), %rcx
+    cmove %rcx, %rsi
+    leaq fmt_bool(%rip), %rdi
     movl $0, %eax
     call printf@PLT
     movq $1, %rax
@@ -163,8 +181,11 @@ main:
     popq %rsi
     popq %rdi
     call ade_both
-    movq %rax, %rsi
-    leaq fmt(%rip), %rdi
+    cmpq $0, %rax
+    leaq str_true(%rip), %rsi
+    leaq str_false(%rip), %rcx
+    cmove %rcx, %rsi
+    leaq fmt_bool(%rip), %rdi
     movl $0, %eax
     call printf@PLT
     call ade_greet
@@ -242,8 +263,11 @@ main:
     movzbq %al, %rax
     movq %rax, -16(%rbp)
     movq -16(%rbp), %rax
-    movq %rax, %rsi
-    leaq fmt(%rip), %rdi
+    cmpq $0, %rax
+    leaq str_true(%rip), %rsi
+    leaq str_false(%rip), %rcx
+    cmove %rcx, %rsi
+    leaq fmt_bool(%rip), %rdi
     movl $0, %eax
     call printf@PLT
     movq $0, %rax

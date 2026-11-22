@@ -66,7 +66,7 @@ namespace {
                     return Type::Int;
                 case TokenType::BangEqual:
                 case TokenType::EqualEqual:
-                    if (left_type != Type::Unknown && right_type != Type::Unknown && left_type != right_type) {
+                    if (left_type != right_type) {
                         error(bin.op, "operator '" + bin.op.lexeme + "' expects operands of the same type, got " + std::string(typeName(left_type)) + " and " + std::string(typeName(right_type)));
                     }
                     return Type::Bool;
@@ -188,6 +188,9 @@ namespace {
                 scopes.back()[param.name.lexeme] = tokenToType(param.type);
             }
             checkBlock(fun.body);
+            if (*currentReturn != Type::Void && !alwaysReturns(fun.body)) {
+                error(fun.name, "function '" + fun.name.lexeme + "' does not return a value on every path");
+            }
             scopes = std::move(backUp);
             currentReturn = backUpRet;
         }
@@ -211,8 +214,21 @@ namespace {
             return type;
         }
 
+        bool alwaysReturns(const std::vector<Stmt>& statements) {
+            for (const Stmt& stmt : statements) {
+                if (std::get_if<ReturnStmt>(&stmt.node)) return true;
+                if (const IfStmt* ifstmt = std::get_if<IfStmt>(&stmt.node)) {
+                    if (alwaysReturns(ifstmt->thenBranch) && alwaysReturns(ifstmt->elseBranch)) return true;
+                }
+                if (const BlockStmt* block = std::get_if<BlockStmt>(&stmt.node)) {
+                    if (alwaysReturns(block->statements)) return true;
+                }
+            }
+            return false;
+        }
+
         bool mismatch(Type actual, Type expected) {
-            return actual != Type::Unknown && actual != expected;
+            return actual != expected;
         }
 
         [[noreturn]] void error(const Token& token, const std::string& message) {
@@ -232,7 +248,7 @@ void typeCheck(std::vector<Stmt>& program) {
             Type retType = fun->type ? tokenToType(*fun->type) : Type::Void;
             Signature s = Signature{std::move(param_types), retType};
             if (checker.functions.find(fun->name.lexeme) != checker.functions.end()) {
-                checker.error(fun->name, "function already declared");
+                checker.error(fun->name, "function '" + fun->name.lexeme + "' already declared");
             }
             checker.functions[fun->name.lexeme] = s;
         }

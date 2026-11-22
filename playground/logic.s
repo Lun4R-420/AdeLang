@@ -1,5 +1,8 @@
 .section .rodata
 fmt: .string "%lld\n"
+fmt_bool: .string "%s\n"
+str_true: .string "true"
+str_false: .string "false"
 .text
 .globl main
 ade_sideEffect:
@@ -30,8 +33,11 @@ main:
     setne %al
     movzbq %al, %rax
 .Land_end_0:
-    movq %rax, %rsi
-    leaq fmt(%rip), %rdi
+    cmpq $0, %rax
+    leaq str_true(%rip), %rsi
+    leaq str_false(%rip), %rcx
+    cmove %rcx, %rsi
+    leaq fmt_bool(%rip), %rdi
     movl $0, %eax
     call printf@PLT
     movq $1, %rax
@@ -43,8 +49,11 @@ main:
     setne %al
     movzbq %al, %rax
 .Land_end_1:
-    movq %rax, %rsi
-    leaq fmt(%rip), %rdi
+    cmpq $0, %rax
+    leaq str_true(%rip), %rsi
+    leaq str_false(%rip), %rcx
+    cmove %rcx, %rsi
+    leaq fmt_bool(%rip), %rdi
     movl $0, %eax
     call printf@PLT
     movq $0, %rax
@@ -59,8 +68,11 @@ main:
 .Lor_true_2:
     movq $1, %rax
 .Lor_end_2:
-    movq %rax, %rsi
-    leaq fmt(%rip), %rdi
+    cmpq $0, %rax
+    leaq str_true(%rip), %rsi
+    leaq str_false(%rip), %rcx
+    cmove %rcx, %rsi
+    leaq fmt_bool(%rip), %rdi
     movl $0, %eax
     call printf@PLT
     movq $0, %rax
@@ -75,8 +87,11 @@ main:
 .Lor_true_3:
     movq $1, %rax
 .Lor_end_3:
-    movq %rax, %rsi
-    leaq fmt(%rip), %rdi
+    cmpq $0, %rax
+    leaq str_true(%rip), %rsi
+    leaq str_false(%rip), %rcx
+    cmove %rcx, %rsi
+    leaq fmt_bool(%rip), %rdi
     movl $0, %eax
     call printf@PLT
     movq $3, %rax
@@ -102,8 +117,11 @@ main:
     setne %al
     movzbq %al, %rax
 .Land_end_4:
-    movq %rax, %rsi
-    leaq fmt(%rip), %rdi
+    cmpq $0, %rax
+    leaq str_true(%rip), %rsi
+    leaq str_false(%rip), %rcx
+    cmove %rcx, %rsi
+    leaq fmt_bool(%rip), %rdi
     movl $0, %eax
     call printf@PLT
     movq $1, %rax
@@ -137,8 +155,11 @@ main:
 .Lor_true_5:
     movq $1, %rax
 .Lor_end_5:
-    movq %rax, %rsi
-    leaq fmt(%rip), %rdi
+    cmpq $0, %rax
+    leaq str_true(%rip), %rsi
+    leaq str_false(%rip), %rcx
+    cmove %rcx, %rsi
+    leaq fmt_bool(%rip), %rdi
     movl $0, %eax
     call printf@PLT
     movq $0, %rax
@@ -161,8 +182,11 @@ main:
 .Lor_true_6:
     movq $1, %rax
 .Lor_end_6:
-    movq %rax, %rsi
-    leaq fmt(%rip), %rdi
+    cmpq $0, %rax
+    leaq str_true(%rip), %rsi
+    leaq str_false(%rip), %rcx
+    cmove %rcx, %rsi
+    leaq fmt_bool(%rip), %rdi
     movl $0, %eax
     call printf@PLT
     movq $1, %rax
@@ -185,8 +209,11 @@ main:
 .Lor_true_8:
     movq $1, %rax
 .Lor_end_8:
-    movq %rax, %rsi
-    leaq fmt(%rip), %rdi
+    cmpq $0, %rax
+    leaq str_true(%rip), %rsi
+    leaq str_false(%rip), %rcx
+    cmove %rcx, %rsi
+    leaq fmt_bool(%rip), %rdi
     movl $0, %eax
     call printf@PLT
     movq $1, %rax
@@ -201,8 +228,11 @@ main:
     cmpq $0, %rax
     sete %al
     movzbq %al, %rax
-    movq %rax, %rsi
-    leaq fmt(%rip), %rdi
+    cmpq $0, %rax
+    leaq str_true(%rip), %rsi
+    leaq str_false(%rip), %rcx
+    cmove %rcx, %rsi
+    leaq fmt_bool(%rip), %rdi
     movl $0, %eax
     call printf@PLT
     movq $0, %rax
@@ -236,8 +266,11 @@ main:
     setne %al
     movzbq %al, %rax
 .Land_end_11:
-    movq %rax, %rsi
-    leaq fmt(%rip), %rdi
+    cmpq $0, %rax
+    leaq str_true(%rip), %rsi
+    leaq str_false(%rip), %rcx
+    cmove %rcx, %rsi
+    leaq fmt_bool(%rip), %rdi
     movl $0, %eax
     call printf@PLT
     movq -8(%rbp), %rax
@@ -272,8 +305,11 @@ main:
 .Lor_true_12:
     movq $1, %rax
 .Lor_end_12:
-    movq %rax, %rsi
-    leaq fmt(%rip), %rdi
+    cmpq $0, %rax
+    leaq str_true(%rip), %rsi
+    leaq str_false(%rip), %rcx
+    cmove %rcx, %rsi
+    leaq fmt_bool(%rip), %rdi
     movl $0, %eax
     call printf@PLT
     movq $0, %rax
@@ -285,8 +321,11 @@ main:
     setne %al
     movzbq %al, %rax
 .Land_end_13:
-    movq %rax, %rsi
-    leaq fmt(%rip), %rdi
+    cmpq $0, %rax
+    leaq str_true(%rip), %rsi
+    leaq str_false(%rip), %rcx
+    cmove %rcx, %rsi
+    leaq fmt_bool(%rip), %rdi
     movl $0, %eax
     call printf@PLT
     movq $1, %rax
@@ -301,8 +340,11 @@ main:
 .Lor_true_14:
     movq $1, %rax
 .Lor_end_14:
-    movq %rax, %rsi
-    leaq fmt(%rip), %rdi
+    cmpq $0, %rax
+    leaq str_true(%rip), %rsi
+    leaq str_false(%rip), %rcx
+    cmove %rcx, %rsi
+    leaq fmt_bool(%rip), %rdi
     movl $0, %eax
     call printf@PLT
     movq $1, %rax
@@ -314,8 +356,11 @@ main:
     setne %al
     movzbq %al, %rax
 .Land_end_15:
-    movq %rax, %rsi
-    leaq fmt(%rip), %rdi
+    cmpq $0, %rax
+    leaq str_true(%rip), %rsi
+    leaq str_false(%rip), %rcx
+    cmove %rcx, %rsi
+    leaq fmt_bool(%rip), %rdi
     movl $0, %eax
     call printf@PLT
     movq $5, %rax
