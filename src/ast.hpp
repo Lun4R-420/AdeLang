@@ -23,6 +23,10 @@ struct FloatLiteral {
     double value;
 };
 
+struct StringLiteral {
+    std::string value;
+};
+
 struct Unary {
     Token op;
     std::unique_ptr<Expr> right;
@@ -63,7 +67,7 @@ struct BoolLiteral {
 };
 
 struct Expr {
-    std::variant<Literal, FloatLiteral, BoolLiteral, Unary, Binary, Logical, Grouping, Variable, Assign, Call> node;
+    std::variant<Literal, FloatLiteral, StringLiteral, BoolLiteral, Unary, Binary, Logical, Grouping, Variable, Assign, Call> node;
     Type type = Type::Unknown;
 };
 

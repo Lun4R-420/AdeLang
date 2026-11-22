@@ -10,6 +10,7 @@ namespace {
     struct CodeGen {
         std::ostringstream out;
         std::vector<std::unordered_map<std::string, int>> scopes{ {} };
+        std::vector<std::string> strings;
         std::unordered_map<std::string, size_t> table;
         std::string returnLabel;
         bool inFunction = false;
@@ -79,6 +80,12 @@ namespace {
         void operator()(const FloatLiteral& flit) {
             std::string instr = "movabsq $" + std::to_string(std::bit_cast<long long>(flit.value)) + ", %rax"; 
             emit(instr);
+        }
+
+        void operator()(const StringLiteral& slit) {
+            int id = strings.size();
+            strings.push_back(slit.value);
+            emit("leaq .Lstr_" + std::to_string(id) + "(%rip), %rax");
         }
 
         void operator()(const BoolLiteral &boolLit) {
@@ -222,6 +229,10 @@ namespace {
                 emit("movq %rax, %xmm0");
                 emit("leaq fmt_float(%rip), %rdi");
                 emit("movl $1, %eax");
+            } else if (print.expr->type == Type::String) {
+                emit("movq %rax, %rsi");
+                emit("leaq fmt_bool(%rip), %rdi");
+                emit("movl $0, %eax");
             } else {
                 throw std::runtime_error("[line " + std::to_string(print.keyword.line) + "] Error: cannot print value of type " + typeName(print.expr->type));
             }
@@ -316,12 +327,13 @@ namespace {
 }
 
 std::string generateFunction(const std::string& label, const std::vector<const Stmt*>& body, const std::vector<Param>& params, int& labelCount,
-                            const std::unordered_map<std::string, size_t>& table) {
+                            const std::unordered_map<std::string, size_t>& table, std::vector<std::string>& strings) {
     CodeGen gen;
     gen.returnLabel = ".Lret_" + label;
     gen.inFunction = label == "main" ? false : true;
     gen.labelCount = labelCount;
     gen.table = table;
+    gen.strings = strings;
 
     for (size_t i = 0; i < params.size(); i++) {
         gen.stackSize += 8;
@@ -333,6 +345,7 @@ std::string generateFunction(const std::string& label, const std::vector<const S
         std::visit(gen, stmt->node);
     }
     labelCount = gen.labelCount;
+    strings = gen.strings;
     std::string func_body = gen.out.str();
     int frameSize = (gen.stackSize + 15) / 16 * 16;
 
@@ -372,6 +385,7 @@ std::string generateProgram(const std::vector<Stmt>& program) {
     }
 
     int labelCount = 0;
+    std::vector<std::string> strings;
     std::ostringstream result;
     result << ".section .rodata\nfmt: .string \"%lld\\n\"\nfmt_float: .string \"%.15g\\n\"\nfmt_bool: .string \"%s\\n\"\nstr_true: .string \"true\"\nstr_false: .string \"false\"\n.text\n.globl main\n";
 
@@ -380,10 +394,14 @@ std::string generateProgram(const std::vector<Stmt>& program) {
         for (const Stmt& stmt : fun->body) {
             body.push_back(&stmt);
         }
-        result << generateFunction("ade_" + fun->name.lexeme, body, fun->params, labelCount, function_table);
+        result << generateFunction("ade_" + fun->name.lexeme, body, fun->params, labelCount, function_table, strings);
     }
 
-    result << generateFunction("main", topLevel, {}, labelCount, function_table);
+    result << generateFunction("main", topLevel, {}, labelCount, function_table, strings);
+    result << ".section .rodata\n";
+    for (size_t i = 0; i < strings.size(); i++) {
+        result << ".Lstr_" + std::to_string(i) + ": .string \"" + strings[i] + "\"\n";
+    }
     result << ".section .note.GNU-stack,\"\",@progbits\n";
     return result.str();
 }

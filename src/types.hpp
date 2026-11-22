@@ -2,7 +2,7 @@
 #include "token.hpp"
 
 enum class Type {
-    Int, Float, Bool, Void, Unknown
+    Int, Float, String, Bool, Void, Unknown
 };
 
 const char* typeName(Type type);

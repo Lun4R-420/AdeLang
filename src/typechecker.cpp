@@ -33,6 +33,10 @@ namespace {
             return Type::Float;
         }
 
+        Type operator() (const StringLiteral&) {
+            return Type::String;
+        }
+
         Type operator() (const BoolLiteral&) {
             return Type::Bool;
         }
@@ -80,6 +84,9 @@ namespace {
                     return Type::Int;
                 case TokenType::BangEqual:
                 case TokenType::EqualEqual:
+                    if (left_type == Type::String) {
+                        error(bin.op, "cannot compare strings yet");
+                    }
                     if (left_type != right_type) {
                         error(bin.op, "operator '" + bin.op.lexeme + "' expects operands of the same type, got " + std::string(typeName(left_type)) + " and " + std::string(typeName(right_type)));
                     }

@@ -58,4 +58,5 @@ main:
     movq %rbp, %rsp
     popq %rbp
     ret
+.section .rodata
 .section .note.GNU-stack,"",@progbits

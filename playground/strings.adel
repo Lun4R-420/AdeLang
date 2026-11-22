@@ -1,0 +1,31 @@
+print "hello";
+
+var s = "hi";
+print s;
+
+var t: string = "first";
+t = "second";
+print t;
+
+fun greet() -> string {
+    return "hey";
+}
+print greet();
+
+fun pick(b: bool) -> string {
+    if b {
+        return "yes";
+    }
+    return "no";
+}
+print pick(true);
+print pick(false);
+
+fun show(label: string, n: int) {
+    print label;
+    print n;
+}
+show("value", 42);
+
+print "tab\tseparated";
+print "two\nlines";

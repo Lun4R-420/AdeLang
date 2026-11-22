@@ -36,6 +36,9 @@ struct AstPrinter {
     std::string operator() (const FloatLiteral& flit) {
         return std::to_string(flit.value);
     }
+    std::string operator() (const StringLiteral& slit) {
+        return slit.value;
+    }
 };
 
 std::string printAst(const Expr& expr) {
